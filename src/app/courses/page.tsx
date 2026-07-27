@@ -1,8 +1,140 @@
 import Link from "next/link";
-import {createClient} from "@/lib/supabase/server";
+import { createClient } from "@/lib/supabase/server";
+import { PublicHeader } from "@/components/public-header";
 
-type Category={id:string;name:string;slug:string};
-type Course={id:string;title:string;slug:string;short_description:string;price_minor:number;currency:string;categories:{name:string}|null;profiles:{full_name:string}|null};
-const money=(minor:number,currency:string)=>new Intl.NumberFormat("en-NG",{style:"currency",currency,maximumFractionDigits:0}).format(minor/100);
+type Category = { id: string; name: string; slug: string };
+type Course = {
+  id: string;
+  title: string;
+  slug: string;
+  short_description: string;
+  price_minor: number;
+  currency: string;
+  categories: { name: string } | null;
+  profiles: { full_name: string } | null;
+};
+const money = (minor: number, currency: string) =>
+  new Intl.NumberFormat("en-NG", {
+    style: "currency",
+    currency,
+    maximumFractionDigits: 0,
+  }).format(minor / 100);
 
-export default async function CoursesPage({searchParams}:{searchParams:Promise<{category?:string;q?:string}>}){const filters=await searchParams;const client=await createClient();let categories:Category[]=[];let courses:Course[]=[];if(client){const categoryResult=await client.from("categories").select("id,name,slug").eq("is_active",true).order("sort_order");categories=(categoryResult.data||[]) as Category[];let query=client.from("courses").select("id,title,slug,short_description,price_minor,currency,categories(name),profiles!courses_creator_id_fkey(full_name)").eq("status","published").order("published_at",{ascending:false});const selected=categories.find(x=>x.name===filters.category||x.slug===filters.category);if(selected)query=query.eq("category_id",selected.id);if(filters.q)query=query.ilike("title",`%${filters.q.slice(0,80)}%`);const result=await query;courses=(result.data||[]) as unknown as Course[];}return <main className="catalogue-page"><header className="site-header"><Link className="brand" href="/"><span className="brand-mark">M</span> Mahadum</Link><nav className="desktop-nav"><Link href="/courses">All courses</Link><Link href="/signup?role=creator">Teach</Link></nav><div className="header-actions"><Link className="login" href="/login">Log in</Link><Link className="button button-small" href="/signup">Get started</Link></div></header><section className="catalogue-hero"><span className="overline">Mahadum marketplace</span><h1>Find your next practical skill.</h1><form action="/courses"><input name="q" defaultValue={filters.q} placeholder="Search published courses"/><button className="button">Search</button></form></section><section className="section" id="categories"><div className="catalogue-filters"><Link className={!filters.category?"active":""} href="/courses">All</Link>{categories.map(item=><Link className={filters.category===item.name||filters.category===item.slug?"active":""} href={`/courses?category=${encodeURIComponent(item.slug)}`} key={item.id}>{item.name}</Link>)}</div><div className="course-grid">{courses.length===0?<div className="empty-state"><b>No published courses yet</b><p>{filters.q||filters.category?"Try another search or category.":"Creators are preparing the first Mahadum courses."}</p></div>:courses.map((course,index)=><Link className="course-card" href={`/courses/${course.slug}`} key={course.id}><div className={`course-cover ${["course-purple","course-orange","course-blue"][index%3]}`}><span>{course.categories?.name||"Course"}</span><div className="cover-shape"><i/><i/><i/></div></div><div className="course-content"><h3>{course.title}</h3><p>{course.short_description}</p><div className="creator-row"><span>{(course.profiles?.full_name||"M").slice(0,2).toUpperCase()}</span><p>By {course.profiles?.full_name||"Mahadum creator"}</p></div><div className="course-footer"><strong>{money(course.price_minor,course.currency)}</strong><span>View course →</span></div></div></Link>)}</div></section></main>}
+export default async function CoursesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ category?: string; q?: string }>;
+}) {
+  const filters = await searchParams;
+  const client = await createClient();
+  let categories: Category[] = [];
+  let courses: Course[] = [];
+  if (client) {
+    const categoryResult = await client
+      .from("categories")
+      .select("id,name,slug")
+      .eq("is_active", true)
+      .order("sort_order");
+    categories = (categoryResult.data || []) as Category[];
+    let query = client
+      .from("courses")
+      .select(
+        "id,title,slug,short_description,price_minor,currency,categories(name),profiles!courses_creator_id_fkey(full_name)",
+      )
+      .eq("status", "published")
+      .order("published_at", { ascending: false });
+    const selected = categories.find(
+      (x) => x.name === filters.category || x.slug === filters.category,
+    );
+    if (selected) query = query.eq("category_id", selected.id);
+    if (filters.q) query = query.ilike("title", `%${filters.q.slice(0, 80)}%`);
+    const result = await query;
+    courses = (result.data || []) as unknown as Course[];
+  }
+  return (
+    <main className="catalogue-page">
+      <PublicHeader />
+      <section className="catalogue-hero">
+        <span className="overline">Mahadum marketplace</span>
+        <h1>Find your next practical skill.</h1>
+        <form action="/courses">
+          <input
+            name="q"
+            defaultValue={filters.q}
+            placeholder="Search published courses"
+          />
+          <button className="button">Search</button>
+        </form>
+      </section>
+      <section className="section" id="categories">
+        <div className="catalogue-filters">
+          <Link className={!filters.category ? "active" : ""} href="/courses">
+            All
+          </Link>
+          {categories.map((item) => (
+            <Link
+              className={
+                filters.category === item.name || filters.category === item.slug
+                  ? "active"
+                  : ""
+              }
+              href={`/courses?category=${encodeURIComponent(item.slug)}`}
+              key={item.id}
+            >
+              {item.name}
+            </Link>
+          ))}
+        </div>
+        <div className="course-grid">
+          {courses.length === 0 ? (
+            <div className="empty-state">
+              <b>No published courses yet</b>
+              <p>
+                {filters.q || filters.category
+                  ? "Try another search or category."
+                  : "Creators are preparing the first Mahadum courses."}
+              </p>
+            </div>
+          ) : (
+            courses.map((course, index) => (
+              <Link
+                className="course-card"
+                href={`/courses/${course.slug}`}
+                key={course.id}
+              >
+                <div
+                  className={`course-cover ${["course-purple", "course-orange", "course-blue"][index % 3]}`}
+                >
+                  <span>{course.categories?.name || "Course"}</span>
+                  <div className="cover-shape">
+                    <i />
+                    <i />
+                    <i />
+                  </div>
+                </div>
+                <div className="course-content">
+                  <h3>{course.title}</h3>
+                  <p>{course.short_description}</p>
+                  <div className="creator-row">
+                    <span>
+                      {(course.profiles?.full_name || "M")
+                        .slice(0, 2)
+                        .toUpperCase()}
+                    </span>
+                    <p>By {course.profiles?.full_name || "Mahadum creator"}</p>
+                  </div>
+                  <div className="course-footer">
+                    <strong>
+                      {money(course.price_minor, course.currency)}
+                    </strong>
+                    <span>View course →</span>
+                  </div>
+                </div>
+              </Link>
+            ))
+          )}
+        </div>
+      </section>
+    </main>
+  );
+}

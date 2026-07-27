@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { PublicMobileNav } from "@/components/public-mobile-nav";
+import { PublicHeader } from "@/components/public-header";
 
 const categories = [
   { icon: "✦", name: "Design & Creativity", count: "240 courses", tone: "lavender" },
@@ -21,13 +21,7 @@ function ArrowIcon() {
 export default function Home() {
   return (
     <main>
-      <header className="site-header">
-        <Link className="brand" href="/" aria-label="Mahadum home"><span className="brand-mark">M</span> Mahadum</Link>
-        <nav className="desktop-nav" aria-label="Primary navigation">
-          <Link href="/courses">Explore</Link><Link href="/courses#categories">Categories</Link><Link href="/signup?role=creator">For creators</Link>
-        </nav>
-        <div className="header-actions"><Link className="login" href="/login">Log in</Link><Link className="button button-small" href="/signup">Get started</Link><PublicMobileNav /></div>
-      </header>
+      <PublicHeader />
 
       <section className="hero" id="top">
         <div className="hero-copy">
