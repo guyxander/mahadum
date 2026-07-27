@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { PublicMobileNav } from "@/components/public-mobile-nav";
 
 const categories = [
   { icon: "✦", name: "Design & Creativity", count: "240 courses", tone: "lavender" },
@@ -25,7 +26,7 @@ export default function Home() {
         <nav className="desktop-nav" aria-label="Primary navigation">
           <Link href="/courses">Explore</Link><Link href="/courses#categories">Categories</Link><Link href="/signup?role=creator">For creators</Link>
         </nav>
-        <div className="header-actions"><Link className="login" href="/login">Log in</Link><Link className="button button-small" href="/signup">Get started</Link></div>
+        <div className="header-actions"><Link className="login" href="/login">Log in</Link><Link className="button button-small" href="/signup">Get started</Link><PublicMobileNav /></div>
       </header>
 
       <section className="hero" id="top">

@@ -8,6 +8,7 @@ export function AppShell({ role, section, name, children }: { role: Role; sectio
   return <div className="app-shell">
     <aside className="sidebar">
       <Link className="brand" href="/"><span className="brand-mark">M</span> Mahadum</Link>
+      <details className="dashboard-mobile-menu"><summary aria-label="Open dashboard menu"><span aria-hidden="true" /></summary><nav aria-label="Dashboard navigation">{nav[role].map((item) => { const slug = item.toLowerCase().replaceAll(" ", "-"); return <Link className={section === slug ? "active" : ""} href={`/dashboard/${role}/${slug}`} key={item}>{item}</Link>; })}<Link href="/">Marketplace</Link><form action={signOut}><button>Sign out</button></form></nav></details>
       <div className="workspace-label">{role === "creator" ? "Creator Hub" : role === "admin" ? "Admin console" : "Learning space"}</div>
       <nav>{nav[role].map((item) => { const slug = item.toLowerCase().replaceAll(" ", "-"); return <Link className={section === slug ? "active" : ""} href={`/dashboard/${role}/${slug}`} key={item}><span>{item.slice(0,1)}</span>{item}</Link>; })}</nav>
       <div className="sidebar-foot"><Link href="/">← Marketplace</Link><form action={signOut}><button>Sign out</button></form></div>
