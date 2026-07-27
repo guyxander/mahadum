@@ -2,12 +2,15 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 
-export async function signIn(formData: FormData) {
+export type LoginState={error:string};
+export async function signIn(_state:LoginState,formData: FormData):Promise<LoginState> {
   const client = await createClient();
-  if (!client) redirect("/login?error=Supabase+is+not+configured");
-  const { error } = await client.auth.signInWithPassword({ email:String(formData.get("email")||""), password:String(formData.get("password")||"") });
-  if (error) redirect(`/login?error=${encodeURIComponent(error.message)}`);
-  const {data:roles}=await client.from("user_roles").select("role");const granted=new Set((roles||[]).map(item=>item.role));
+  if(!client)return {error:"Login is temporarily unavailable. Please try again shortly."};
+  const email=String(formData.get("email")||"").trim().toLowerCase();const password=String(formData.get("password")||"");
+  if(!email||!password)return {error:"Enter your email address and password."};
+  const {error}=await client.auth.signInWithPassword({email,password});
+  if(error){console.warn("[auth/login] rejected",{code:error.code,status:error.status});return {error:error.message};}
+  const {data:roles,error:roleError}=await client.from("user_roles").select("role");if(roleError)console.error("[auth/login] role lookup failed",{code:roleError.code});const granted=new Set((roles||[]).map(item=>item.role));
   redirect(granted.has("admin")?"/dashboard/admin/overview":granted.has("creator")?"/dashboard/creator/overview":"/dashboard/learner/my-learning");
 }
 
