@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { DashboardData, Row } from "@/lib/dashboard";
 import {
   addLesson,
+  addFirstLesson,
   addModule,
   applyAffiliate,
   deleteCourse,
@@ -22,6 +23,7 @@ import {
 } from "@/app/dashboard/actions";
 import { CheckoutButton } from "@/components/checkout-button";
 import { AssetUploader } from "@/components/asset-uploader";
+import { youtubeVideoId } from "@/lib/youtube";
 
 const string = (value: unknown) => (typeof value === "string" ? value : "");
 const number = (value: unknown) => (typeof value === "number" ? value : 0);
@@ -84,8 +86,21 @@ function CourseBuilder({ data }: { data: DashboardData }) {
         <h3>New course</h3>
         <CourseForm categories={data.categories} />
       </section>
-      {data.courses.map((course) => (
+      {data.courses.map((course) => {
+            const modules = list(course.course_modules);
+            const hasYouTubeLesson = modules.some((module) => list(module.lessons).some((lesson) => Boolean(youtubeVideoId(string(lesson.video_url)))));
+            return (
         <section className="panel course-editor" key={string(course.id)}>
+          <div className="course-readiness">
+            <strong>{hasYouTubeLesson ? "Ready to submit" : "Next: add your first YouTube lesson"}</strong>
+            <span>{hasYouTubeLesson ? "Your draft has a playable lecture video." : "Paste a YouTube link below. Mahadum will embed it for learners."}</span>
+            {string(course.status) === "draft" && hasYouTubeLesson ? (
+              <form action={submitCourse}>
+                <input type="hidden" name="id" value={string(course.id)} />
+                <button className="button">Submit for review</button>
+              </form>
+            ) : null}
+          </div>
           <div className="panel-head">
             <div>
               <span className={`status ${string(course.status)}`}>
@@ -99,6 +114,17 @@ function CourseBuilder({ data }: { data: DashboardData }) {
             <summary>Edit course details</summary>
             <CourseForm categories={data.categories} course={course} />
           </details>
+          {list(course.course_modules).length === 0 ? (
+            <form action={addFirstLesson} className="first-lesson-form">
+              <input type="hidden" name="course_id" value={string(course.id)} />
+              <div><span className="overline">Step 2 of 2</span><h3>Add your first YouTube lesson</h3><p>Use an Unlisted YouTube video. Learners watch it inside Mahadum without seeing a direct video link.</p></div>
+              <label>Lesson title<input name="title" required placeholder="Introduction" /></label>
+              <label>YouTube video link<input name="video_url" type="url" required inputMode="url" placeholder="https://youtu.be/..." /></label>
+              <label>Duration (minutes)<input name="duration_minutes" type="number" min="0" placeholder="10" /></label>
+              <label className="first-lesson-description">Lesson description<textarea name="description" placeholder="What learners will cover in this lesson" /></label>
+              <button className="button">Save YouTube lesson</button>
+            </form>
+          ) : null}
           <form action={addModule} className="inline-form">
             <input type="hidden" name="course_id" value={string(course.id)} />
             <input name="title" required placeholder="New module title" />
@@ -136,12 +162,7 @@ function CourseBuilder({ data }: { data: DashboardData }) {
                           defaultValue={string(lesson.title)}
                           required
                         />
-                        <input
-                          name="video_url"
-                          type="url"
-                          defaultValue={string(lesson.video_url)}
-                          placeholder="YouTube video link"
-                        />
+                        <label>YouTube video link<input name="video_url" type="url" defaultValue={string(lesson.video_url)} placeholder="https://youtu.be/..." /></label>
                         <input
                           name="duration_minutes"
                           type="number"
@@ -183,11 +204,7 @@ function CourseBuilder({ data }: { data: DashboardData }) {
                     value={string(module.id)}
                   />
                   <input name="title" required placeholder="Lesson title" />
-                  <input
-                    name="video_url"
-                    type="url"
-                    placeholder="YouTube video link"
-                  />
+                  <label>YouTube video link<input name="video_url" type="url" placeholder="https://youtu.be/..." /></label>
                   <input
                     name="duration_minutes"
                     type="number"
@@ -211,7 +228,8 @@ function CourseBuilder({ data }: { data: DashboardData }) {
               </div>
             ))}
         </section>
-      ))}
+            );
+          })}
     </div>
   );
 }
@@ -275,8 +293,39 @@ function CourseForm({
           />
         </label>
       </div>
+      {!course ? (
+        <fieldset className="first-video-fields">
+          <legend>First YouTube lesson</legend>
+          <p>
+            Paste an Unlisted YouTube link. The video will play inside Mahadum
+            without displaying the direct link to ordinary learners.
+          </p>
+          <label>
+            Lesson title
+            <input name="lesson_title" required placeholder="Introduction" />
+          </label>
+          <label>
+            YouTube video link
+            <input
+              name="video_url"
+              type="url"
+              inputMode="url"
+              required
+              placeholder="https://youtu.be/..."
+            />
+          </label>
+          <label>
+            Duration (minutes)
+            <input name="duration_minutes" type="number" min="0" placeholder="10" />
+          </label>
+          <label>
+            Lesson description
+            <textarea name="lesson_description" placeholder="What learners will cover" />
+          </label>
+        </fieldset>
+      ) : null}
       <button className="button">
-        {course ? "Update course" : "Save draft"}
+        {course ? "Update course" : "Create course with video"}
       </button>
     </form>
   );

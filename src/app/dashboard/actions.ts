@@ -54,23 +54,64 @@ export async function saveCourse(data: FormData) {
     payload.price_minor < 0
   )
     throw new Error("Complete all course fields");
-  const query = id
-    ? client.from("courses").update(payload).eq("id", id)
-    : client.from("courses").insert(payload);
-  const { error } = await query;
-  if (error) throw error;
+  if (id) {
+    const { error } = await client
+      .from("courses")
+      .update(payload)
+      .eq("id", id)
+      .eq("creator_id", user.id);
+    if (error) throw error;
+  } else {
+    const videoUrl = text(data, "video_url");
+    if (!youtubeVideoId(videoUrl))
+      throw new Error("Enter a valid YouTube video link.");
+    const { data: course, error: courseError } = await client
+      .from("courses")
+      .insert(payload)
+      .select("id")
+      .single();
+    if (courseError) throw courseError;
+    const { data: module, error: moduleError } = await client
+      .from("course_modules")
+      .insert({ course_id: course.id, title: "Course lessons", position: 0 })
+      .select("id")
+      .single();
+    if (moduleError) throw moduleError;
+    const { error: lessonError } = await client.from("lessons").insert({
+      module_id: module.id,
+      title: text(data, "lesson_title"),
+      description: text(data, "lesson_description"),
+      video_url: videoUrl,
+      duration_seconds: Number(text(data, "duration_minutes") || 0) * 60,
+      position: 0,
+      is_free_preview: false,
+    });
+    if (lessonError) throw lessonError;
+  }
   revalidatePath("/dashboard/creator/courses");
-  redirect("/dashboard/creator/courses");
+  revalidatePath("/dashboard/creator/course-builder");
+  redirect("/dashboard/creator/course-builder");
 }
 export async function submitCourse(data: FormData) {
-  const { client } = await context("creator");
-  const { error } = await client
+  const { client, user } = await context("creator");
+  const courseId = text(data, "id");
+  const { data: modules } = await client.from("course_modules").select("id").eq("course_id", courseId);
+  const moduleIds = (modules || []).map((module) => module.id);
+  if (!moduleIds.length) throw new Error("Add at least one lesson before submitting your course.");
+  const { data: lessons } = await client.from("lessons").select("video_url").in("module_id", moduleIds);
+  if (!(lessons || []).some((lesson) => youtubeVideoId(lesson.video_url))) throw new Error("Add at least one valid YouTube lesson before submitting your course.");
+  const { data: submitted, error } = await client
     .from("courses")
     .update({ status: "in_review" })
-    .eq("id", text(data, "id"))
-    .eq("status", "draft");
+    .eq("id", courseId)
+    .eq("creator_id", user.id)
+    .eq("status", "draft")
+    .select("id")
+    .maybeSingle();
   if (error) throw error;
+  if (!submitted) throw new Error("Only draft courses can be submitted.");
   revalidatePath("/dashboard/creator/courses");
+  revalidatePath("/dashboard/creator/course-builder");
 }
 export async function deleteCourse(data: FormData) {
   const { client } = await context("creator");
@@ -119,6 +160,39 @@ export async function addLesson(data: FormData) {
       position: count || 0,
       is_free_preview: data.get("is_free_preview") === "on",
     });
+  if (error) throw error;
+  revalidatePath("/dashboard/creator/course-builder");
+}
+
+export async function addFirstLesson(data: FormData) {
+  const { client, user } = await context("creator");
+  const courseId = text(data, "course_id");
+  const videoUrl = text(data, "video_url");
+  if (!youtubeVideoId(videoUrl)) throw new Error("Enter a valid YouTube video link.");
+  const { data: ownedCourse } = await client
+    .from("courses")
+    .select("id")
+    .eq("id", courseId)
+    .eq("creator_id", user.id)
+    .eq("status", "draft")
+    .maybeSingle();
+  if (!ownedCourse) throw new Error("Only your draft courses can be edited.");
+  let { data: module } = await client.from("course_modules").select("id").eq("course_id", courseId).order("position").limit(1).maybeSingle();
+  if (!module) {
+    const result = await client.from("course_modules").insert({ course_id: courseId, title: "Course lessons", position: 0 }).select("id").single();
+    if (result.error) throw result.error;
+    module = result.data;
+  }
+  const { count } = await client.from("lessons").select("id", { count: "exact", head: true }).eq("module_id", module.id);
+  const { error } = await client.from("lessons").insert({
+    module_id: module.id,
+    title: text(data, "title"),
+    description: text(data, "description"),
+    video_url: videoUrl,
+    duration_seconds: Number(text(data, "duration_minutes") || 0) * 60,
+    position: count || 0,
+    is_free_preview: false,
+  });
   if (error) throw error;
   revalidatePath("/dashboard/creator/course-builder");
 }
