@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { markLessonComplete } from "@/app/dashboard/actions";
+import { youtubeEmbedUrl } from "@/lib/youtube";
 
 type Lesson = {
   id: string;
@@ -64,6 +65,7 @@ export default async function CoursePlayer({
   const percent = lessons.length
     ? Math.round((completed.size / lessons.length) * 100)
     : 0;
+  const embedUrl = youtubeEmbedUrl(active.video_url);
   return (
     <main className="player">
       <header>
@@ -84,7 +86,11 @@ export default async function CoursePlayer({
           <summary>Course curriculum</summary>
           <nav aria-label="Course curriculum">
             {lessons.map((item, index) => (
-              <Link className={item.id === active.id ? "active" : ""} href={`/learn/${course}/${item.id}`} key={item.id}>
+              <Link
+                className={item.id === active.id ? "active" : ""}
+                href={`/learn/${course}/${item.id}`}
+                key={item.id}
+              >
                 <span>{completed.has(item.id) ? "✓" : index + 1}</span>
                 <span>{item.title}</span>
               </Link>
@@ -111,17 +117,16 @@ export default async function CoursePlayer({
         </aside>
         <section>
           <div className="video-stage">
-            {active.video_url ? (
-              <a
-                className="button"
-                href={active.video_url}
-                target="_blank"
-                rel="noreferrer"
-              >
-                Open lesson video
-              </a>
+            {embedUrl ? (
+              <iframe
+                src={embedUrl}
+                title={`${active.title} lecture video`}
+                allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowFullScreen
+                referrerPolicy="strict-origin-when-cross-origin"
+              />
             ) : (
-              <span>Video will be added by the creator</span>
+              <span>{active.video_url ? "This lesson needs a valid YouTube link" : "Video will be added by the creator"}</span>
             )}
           </div>
           <div className="lesson-content">
