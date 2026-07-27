@@ -1,0 +1,6 @@
+"use client";
+import {useState} from "react";
+import {createClient} from "@/lib/supabase/browser";
+import {updateCourseThumbnail} from "@/app/dashboard/actions";
+
+export function AssetUploader({userId,courseId}:{userId:string;courseId:string}){const [message,setMessage]=useState("");const [busy,setBusy]=useState(false);async function upload(data:FormData){const file=data.get("file");if(!(file instanceof File)||!file.size)return;setBusy(true);setMessage("");const safe=file.name.toLowerCase().replace(/[^a-z0-9._-]+/g,"-");const path=`${userId}/${courseId}/${crypto.randomUUID()}-${safe}`;const client=createClient();if(!client){setMessage("Storage is not configured");setBusy(false);return}const {error}=await client.storage.from("course-assets").upload(path,file,{upsert:false});if(error){setMessage(error.message);setBusy(false);return}const saved=new FormData();saved.set("course_id",courseId);saved.set("path",path);await updateCourseThumbnail(saved);setMessage("Thumbnail uploaded");setBusy(false)}return <form action={upload} className="inline-form"><input type="file" name="file" accept="image/jpeg,image/png,image/webp" required/><button className="outline-button" disabled={busy}>{busy?"Uploading…":"Upload thumbnail"}</button>{message&&<small role="status">{message}</small>}</form>}
