@@ -1,0 +1,1 @@
+export const nav={creator:["Overview","Courses","Course builder","Analytics","Affiliates","Transactions","Payout settings"],learner:["My learning","Explore","Certificates","Profile"],admin:["Overview","Users","Courses","Creators","Learners","Affiliates","Finance","Analytics","Settings","Audit log"]} as const;

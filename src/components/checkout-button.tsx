@@ -1,0 +1,4 @@
+"use client";
+import {useState} from "react";
+
+export function CheckoutButton({courseId}:{courseId:string}){const [busy,setBusy]=useState(false);const [error,setError]=useState("");async function checkout(){setBusy(true);setError("");try{const response=await fetch("/api/payments/checkout",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({courseId})});const result=await response.json() as {checkoutUrl?:string;error?:string};if(!response.ok||!result.checkoutUrl)throw new Error(result.error||"Unable to begin checkout");window.location.assign(result.checkoutUrl)}catch(reason){setError(reason instanceof Error?reason.message:"Unable to begin checkout");setBusy(false)}}return <div><button className="text-link" type="button" onClick={checkout} disabled={busy}>{busy?"Starting checkout…":"Enroll →"}</button>{error&&<small className="form-error" role="alert">{error}</small>}</div>}

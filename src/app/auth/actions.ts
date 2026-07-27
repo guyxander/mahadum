@@ -7,7 +7,8 @@ export async function signIn(formData: FormData) {
   if (!client) redirect("/login?error=Supabase+is+not+configured");
   const { error } = await client.auth.signInWithPassword({ email:String(formData.get("email")||""), password:String(formData.get("password")||"") });
   if (error) redirect(`/login?error=${encodeURIComponent(error.message)}`);
-  redirect("/dashboard/learner/my-learning");
+  const {data:roles}=await client.from("user_roles").select("role");const granted=new Set((roles||[]).map(item=>item.role));
+  redirect(granted.has("admin")?"/dashboard/admin/overview":granted.has("creator")?"/dashboard/creator/overview":"/dashboard/learner/my-learning");
 }
 
 export async function signUp(formData: FormData) {
