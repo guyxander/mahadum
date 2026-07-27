@@ -183,6 +183,8 @@ minimum_password_length = 8
 # Passwords that do not meet the following requirements will be rejected as weak. Supported values
 # are: `letters_digits`, `lower_upper_letters_digits`, `lower_upper_letters_digits_symbols`
 password_requirements = "lower_upper_letters_digits"
+# Reject passwords found in known breach corpuses (hosted Pro projects and above).
+password_hibp_enabled = true
 
 # Configure passkey sign-ins.
 # [auth.passkey]

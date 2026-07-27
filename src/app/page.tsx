@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 const categories = [
   { icon: "✦", name: "Design & Creativity", count: "240 courses", tone: "lavender" },
   { icon: "↗", name: "Business & Growth", count: "186 courses", tone: "blue" },
@@ -56,7 +58,7 @@ export default function Home() {
 
       <section className="creator-banner" id="creators"><div><span className="overline light">Made for creators</span><h2>Your knowledge can<br />change someone&apos;s life.</h2><p>Build your course, grow your audience, and earn on your terms. Mahadum gives you the tools—and gets out of your way.</p><a className="button button-light" href="#signup">Become a creator →</a></div><div className="creator-stats"><div><strong>₦120m+</strong><span>paid to creators</span></div><div><strong>70%</strong><span>creator revenue share</span></div><div><strong>42</strong><span>countries reached</span></div></div></section>
 
-      <footer><a className="brand" href="#top"><span className="brand-mark">M</span> Mahadum</a><p>Learn. Create. Grow.</p><div><a href="#courses">Explore</a><a href="#creators">Teach</a><a href="#about">About</a><a href="#help">Help</a></div><small>© 2026 Mahadum. Built for ambitious minds.</small></footer>
+      <footer><a className="brand" href="#top"><span className="brand-mark">M</span> Mahadum</a><p>Learn. Create. Grow.</p><div><a href="#courses">Explore</a><a href="#creators">Teach</a><Link href="/legal/terms">Terms</Link><Link href="/legal/privacy">Privacy</Link><Link href="/support">Help</Link></div><small>© 2026 Mahadum. Built for ambitious minds.</small></footer>
     </main>
   );
 }
