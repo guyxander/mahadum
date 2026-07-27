@@ -54,6 +54,7 @@ export async function saveCourse(data: FormData) {
     payload.price_minor < 0
   )
     throw new Error("Complete all course fields");
+  let courseId = id;
   if (id) {
     const { error } = await client
       .from("courses")
@@ -62,35 +63,17 @@ export async function saveCourse(data: FormData) {
       .eq("creator_id", user.id);
     if (error) throw error;
   } else {
-    const videoUrl = text(data, "video_url");
-    if (!youtubeVideoId(videoUrl))
-      throw new Error("Enter a valid YouTube video link.");
     const { data: course, error: courseError } = await client
       .from("courses")
       .insert(payload)
       .select("id")
       .single();
     if (courseError) throw courseError;
-    const { data: module, error: moduleError } = await client
-      .from("course_modules")
-      .insert({ course_id: course.id, title: "Course lessons", position: 0 })
-      .select("id")
-      .single();
-    if (moduleError) throw moduleError;
-    const { error: lessonError } = await client.from("lessons").insert({
-      module_id: module.id,
-      title: text(data, "lesson_title"),
-      description: text(data, "lesson_description"),
-      video_url: videoUrl,
-      duration_seconds: Number(text(data, "duration_minutes") || 0) * 60,
-      position: 0,
-      is_free_preview: false,
-    });
-    if (lessonError) throw lessonError;
+    courseId = course.id;
   }
   revalidatePath("/dashboard/creator/courses");
   revalidatePath("/dashboard/creator/course-builder");
-  redirect("/dashboard/creator/course-builder");
+  redirect(`/dashboard/creator/course-builder?course=${courseId}&step=modules`);
 }
 export async function submitCourse(data: FormData) {
   const { client, user } = await context("creator");
@@ -114,14 +97,20 @@ export async function submitCourse(data: FormData) {
   revalidatePath("/dashboard/creator/course-builder");
 }
 export async function deleteCourse(data: FormData) {
-  const { client } = await context("creator");
-  const { error } = await client
+  const { client, user } = await context("creator");
+  const { data: deleted, error } = await client
     .from("courses")
     .delete()
     .eq("id", text(data, "id"))
-    .eq("status", "draft");
+    .eq("creator_id", user.id)
+    .in("status", ["draft", "rejected"])
+    .select("id")
+    .maybeSingle();
   if (error) throw error;
+  if (!deleted) throw new Error("This course cannot be deleted. Only your draft or rejected courses can be removed.");
   revalidatePath("/dashboard/creator/courses");
+  revalidatePath("/dashboard/creator/course-builder");
+  redirect("/dashboard/creator/courses");
 }
 export async function addModule(data: FormData) {
   const { client } = await context("creator");

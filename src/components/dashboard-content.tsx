@@ -24,6 +24,8 @@ import {
 import { CheckoutButton } from "@/components/checkout-button";
 import { AssetUploader } from "@/components/asset-uploader";
 import { youtubeVideoId } from "@/lib/youtube";
+import { CourseBuilderWizard } from "@/components/course-builder-wizard";
+import { DeleteCourseButton } from "@/components/delete-course-button";
 
 const string = (value: unknown) => (typeof value === "string" ? value : "");
 const number = (value: unknown) => (typeof value === "number" ? value : 0);
@@ -49,13 +51,17 @@ export function DashboardContent({
   role,
   section,
   data,
+  builderCourseId,
+  wizardStep,
 }: {
   role: string;
   section: string;
   data: DashboardData;
+  builderCourseId?: string;
+  wizardStep?: string;
 }) {
   if (role === "creator" && section === "course-builder")
-    return <CourseBuilder data={data} />;
+    return <CourseBuilderWizard data={data} courseId={builderCourseId} step={wizardStep} />;
   if (role === "creator" && section === "courses")
     return <CreatorCourses data={data} />;
   if (role === "creator" && section === "affiliates")
@@ -75,7 +81,7 @@ export function DashboardContent({
   return <Overview role={role} data={data} />;
 }
 
-function CourseBuilder({ data }: { data: DashboardData }) {
+export function LegacyCourseBuilder({ data }: { data: DashboardData }) {
   return (
     <div className="dashboard-page">
       <PageHead
@@ -366,24 +372,10 @@ function CreatorCourses({ data }: { data: DashboardData }) {
                 {string(course.status)}
               </span>
               <div className="row-actions">
-                {course.status === "draft" && (
+                {(course.status === "draft" || course.status === "rejected") && (
                   <>
-                    <form action={submitCourse}>
-                      <input
-                        type="hidden"
-                        name="id"
-                        value={string(course.id)}
-                      />
-                      <button>Submit</button>
-                    </form>
-                    <form action={deleteCourse}>
-                      <input
-                        type="hidden"
-                        name="id"
-                        value={string(course.id)}
-                      />
-                      <button>Delete</button>
-                    </form>
+                    <Link href={`/dashboard/creator/course-builder?course=${string(course.id)}&step=details`}>Edit</Link>
+                    <DeleteCourseButton courseId={string(course.id)} courseTitle={string(course.title)} action={deleteCourse} />
                   </>
                 )}
               </div>
