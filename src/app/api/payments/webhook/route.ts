@@ -10,6 +10,15 @@ export async function POST(request: Request) {
   const valid = verifyWebhookSignature(rawBody, signature, secret);
   if (!valid) return NextResponse.json({ error:"Invalid signature" },{status:401});
   const event = JSON.parse(rawBody) as { event?:string; data?: { id?: number; reference?:string } };
+  if (["transfer.success","transfer.failed","transfer.reversed"].includes(event.event || "")) {
+    const transfer = event.data as { transfer_code?:string; reference?:string } | undefined;
+    if (!transfer?.transfer_code) return NextResponse.json({error:"Invalid transfer event"},{status:400});
+    const admin=createAdminClient();
+    const payoutStatus=event.event==="transfer.success"?"paid":"rejected";
+    const {error}=await admin.from("payouts").update({status:payoutStatus,processed_at:new Date().toISOString(),rejection_reason:payoutStatus==="rejected"?event.event:null}).eq("provider_transfer_id",transfer.transfer_code);
+    if(error)return NextResponse.json({error:"Payout update failed"},{status:500});
+    return NextResponse.json({received:true});
+  }
   if (event.event !== "charge.success" || !event.data?.reference) return NextResponse.json({received:true});
   const verified=await verifyPaystackTransaction(event.data.reference,secret);
   if(!verified)return NextResponse.json({error:"Verification failed"},{status:502});

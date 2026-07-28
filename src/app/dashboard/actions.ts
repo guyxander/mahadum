@@ -381,6 +381,22 @@ export async function moderateFinance(data: FormData) {
   )
     throw new Error("Invalid payout status");
   const table = type === "refund" ? "refunds" : "payouts";
+  if (type === "payout" && status === "processing") {
+    const secret = process.env.PAYSTACK_SECRET_KEY;
+    if (!secret) throw new Error("Paystack is not configured");
+    const { data: payout } = await client.from("payouts").select("id,user_id,amount_minor,currency,status,provider_transfer_id").eq("id", id).single();
+    if (!payout || !["pending", "approved"].includes(payout.status) || payout.provider_transfer_id) throw new Error("This payout cannot be transferred");
+    const { data: account } = await client.from("payout_accounts").select("provider_recipient_code").eq("user_id", payout.user_id).single();
+    if (!account?.provider_recipient_code) throw new Error("The creator has no verified Paystack recipient");
+    const transferResponse = await fetch("https://api.paystack.co/transfer", { method:"POST", headers:{Authorization:`Bearer ${secret}`,"Content-Type":"application/json"}, body:JSON.stringify({source:"balance",amount:payout.amount_minor,recipient:account.provider_recipient_code,reason:"Mahadum creator payout",currency:payout.currency,reference:`payout-${payout.id}`}) });
+    const transfer = await transferResponse.json() as {status?:boolean;message?:string;data?:{transfer_code?:string;status?:string}};
+    if (!transferResponse.ok || !transfer.status || !transfer.data?.transfer_code) throw new Error(transfer.message || "Paystack could not initiate this transfer");
+    const { error } = await client.from("payouts").update({status:"processing",provider_transfer_id:transfer.data.transfer_code}).eq("id",id);
+    if (error) throw error;
+    revalidatePath("/dashboard/admin/finance");
+    revalidatePath("/dashboard/creator/wallet");
+    return;
+  }
   const payload =
     type === "payout"
       ? {
