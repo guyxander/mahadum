@@ -28,6 +28,7 @@ import { youtubeVideoId } from "@/lib/youtube";
 import { CourseBuilderWizard } from "@/components/course-builder-wizard";
 import { DeleteCourseButton } from "@/components/delete-course-button";
 import { BankAccountForm, PayoutRequestForm } from "@/components/wallet-forms";
+import { AdminUsers } from "@/components/admin-users";
 
 const string = (value: unknown) => (typeof value === "string" ? value : "");
 const number = (value: unknown) => (typeof value === "number" ? value : 0);
@@ -910,6 +911,7 @@ function AdminSection({
       list(x.user_roles).some((r) => r.role === "learner"),
     );
   if (section === "finance") return <FinanceAdmin data={data} />;
+  if (section === "users") return <AdminUsers users={data.users} currentUserId={data.userId}/>;
   if (section === "settings") return <AdminSettings data={data} />;
   if (section === "overview" || section === "analytics")
     return <Overview role="admin" data={data} />;

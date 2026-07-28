@@ -418,6 +418,30 @@ export async function approveAllPendingPayouts() {
   revalidatePath("/dashboard/creator/wallet");
 }
 
+export async function setUserSuspension(data: FormData) {
+  const { client, user } = await context("admin");
+  const targetId=text(data,"user_id"),suspended=text(data,"suspended")==="true";
+  if(!targetId||targetId===user.id)throw new Error("You cannot suspend your own administrator account");
+  const {error}=await client.from("profiles").update({is_suspended:suspended}).eq("id",targetId);
+  if(error)throw error;
+  revalidatePath("/dashboard/admin/users");
+}
+
+export async function updateUserRoles(data: FormData) {
+  const { client } = await context("admin");
+  const targetId=text(data,"user_id");
+  if(!targetId)throw new Error("User is required");
+  const selected=["learner","creator"].filter(role=>data.get(role)==="on");
+  const {data:existing,error:readError}=await client.from("user_roles").select("role").eq("user_id",targetId);
+  if(readError)throw readError;
+  const current=new Set((existing||[]).map(row=>row.role));
+  const additions=selected.filter(role=>!current.has(role)).map(role=>({user_id:targetId,role}));
+  if(additions.length){const {error}=await client.from("user_roles").insert(additions);if(error)throw error;}
+  const removals=["learner","creator"].filter(role=>current.has(role)&&!selected.includes(role));
+  if(removals.length){const {error}=await client.from("user_roles").delete().eq("user_id",targetId).in("role",removals);if(error)throw error;}
+  revalidatePath("/dashboard/admin/users");
+}
+
 export async function saveCategory(data: FormData) {
   const { client } = await context("admin");
   const id = text(data, "id"),
