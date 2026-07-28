@@ -4,6 +4,7 @@ import {
   addLesson,
   addFirstLesson,
   addModule,
+  approveAllPendingPayouts,
   applyAffiliate,
   deleteCourse,
   deleteLesson,
@@ -736,6 +737,8 @@ function WalletPanel({ data }: { data: DashboardData }) {
 }
 
 function FinanceAdmin({ data }: { data: DashboardData }) {
+  const pendingPayouts=data.payouts.filter(row=>string(row.status)==="pending");
+  const pendingPayoutTotal=pendingPayouts.reduce((sum,row)=>sum+number(row.amount_minor),0);
   return (
     <div className="dashboard-page">
       <PageHead
@@ -753,7 +756,7 @@ function FinanceAdmin({ data }: { data: DashboardData }) {
         )}
       </section>
       <section className="panel">
-        <h3>Payout requests</h3>
+        <div className="panel-head finance-payout-head"><div><h3>Payout requests</h3><p>{pendingPayouts.length} pending · {money(pendingPayoutTotal)}</p></div>{pendingPayouts.length>0?<form action={approveAllPendingPayouts}><button className="button">Approve all pending</button></form>:null}</div>
         {data.payouts.length === 0 ? (
           <Empty text="No payout requests." />
         ) : (
@@ -806,6 +809,8 @@ function FinanceRow({ row, type }: { row: Row; type: "refund" | "payout" }) {
       <span className={`status ${string(row.status)}`}>
         {string(row.status)}
       </span>
+      <div className="finance-row-actions">
+      {type==="payout"&&string(row.status)==="pending"?<form action={moderateFinance}><input type="hidden" name="id" value={string(row.id)} /><input type="hidden" name="type" value="payout"/><input type="hidden" name="status" value="approved"/><button className="approve-payout-button">Approve</button></form>:null}
       <form action={moderateFinance} className="row-actions">
         <input type="hidden" name="id" value={string(row.id)} />
         <input type="hidden" name="type" value={type} />
@@ -821,6 +826,7 @@ function FinanceRow({ row, type }: { row: Row; type: "refund" | "payout" }) {
         </select>
         <button>Apply</button>
       </form>
+      </div>
     </div>
   );
 }

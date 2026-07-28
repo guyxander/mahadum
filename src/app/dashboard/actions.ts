@@ -410,6 +410,14 @@ export async function moderateFinance(data: FormData) {
   if (error) throw error;
   revalidatePath("/dashboard/admin/finance");
 }
+export async function approveAllPendingPayouts() {
+  const { client } = await context("admin");
+  const { error } = await client.from("payouts").update({ status: "approved", processed_at: null }).eq("status", "pending");
+  if (error) throw error;
+  revalidatePath("/dashboard/admin/finance");
+  revalidatePath("/dashboard/creator/wallet");
+}
+
 export async function saveCategory(data: FormData) {
   const { client } = await context("admin");
   const id = text(data, "id"),
