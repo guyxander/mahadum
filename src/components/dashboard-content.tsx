@@ -20,6 +20,7 @@ import {
   updateLesson,
   updateModule,
   updateProfile,
+  requestWalletPayout,
 } from "@/app/dashboard/actions";
 import { CheckoutButton } from "@/components/checkout-button";
 import { AssetUploader } from "@/components/asset-uploader";
@@ -70,6 +71,8 @@ export function DashboardContent({
     return <CreatorTransactions data={data} />;
   if (role === "creator" && section === "payout-settings")
     return <PayoutPanel data={data} />;
+  if (role === "creator" && section === "wallet")
+    return <WalletPanel data={data} />;
   if (role === "learner" && section === "my-learning")
     return <MyLearning data={data} />;
   if (role === "learner" && section === "explore")
@@ -704,6 +707,33 @@ function PayoutPanel({ data }: { data: DashboardData }) {
       </section>
     </div>
   );
+}
+
+function WalletPanel({ data }: { data: DashboardData }) {
+  const holdMs = 7 * 86400000;
+  const creator = data.ledger.filter(x => string(x.entry_type) === "creator_earning").reduce((s,x)=>s+number(x.amount_minor),0);
+  const affiliateAmount = data.ledger.filter(x => string(x.entry_type) === "affiliate_commission").reduce((s,x)=>s+number(x.amount_minor),0);
+  const total = data.ledger.reduce((s,x)=>s+number(x.amount_minor),0);
+  const pending = data.ledger.filter(x => data.generatedAt-new Date(string(x.created_at)).getTime()<holdMs).reduce((s,x)=>s+number(x.amount_minor),0);
+  const reserved = data.payouts.filter(x => ["pending","approved","processing","paid"].includes(string(x.status))).reduce((s,x)=>s+number(x.amount_minor),0);
+  const available = Math.max(0,total-pending-reserved);
+  const paid = data.payouts.filter(x=>string(x.status)==="paid").reduce((s,x)=>s+number(x.amount_minor),0);
+  const affiliate = data.affiliates[0];
+  return <div className="dashboard-page wallet-page">
+    <PageHead title="Wallet" subtitle="Your creator earnings, affiliate commissions, and payouts in one place." />
+    <section className="wallet-hero"><div><span>Available balance</span><strong>{money(available)}</strong><small>Settled funds ready for withdrawal</small></div><div><span>Next payout window</span><b>Friday</b><small>Minimum withdrawal: ₦10,000</small></div></section>
+    <div className="metric-grid wallet-metrics">
+      <article className="metric-card"><span>Pending settlement</span><strong>{money(pending)}</strong><small>Available after the 7-day hold</small></article>
+      <article className="metric-card"><span>Creator earnings</span><strong>{money(creator)}</strong><small>70% share from course sales</small></article>
+      <article className="metric-card"><span>Affiliate earnings</span><strong>{money(affiliateAmount)}</strong><small>{affiliate?`${number(affiliate.level_one_bps)/100}% direct · ${number(affiliate.level_two_bps)/100}% level two`:"Activate affiliates to earn"}</small></article>
+      <article className="metric-card"><span>Total paid out</span><strong>{money(paid)}</strong><small>Completed withdrawals</small></article>
+    </div>
+    <div className="wallet-grid"><section className="panel"><div className="panel-head"><div><h3>Wallet activity</h3><p>Every earning is recorded in your secure ledger.</p></div></div>
+      {data.ledger.length===0?<Empty text="Your earnings will appear here after a verified course sale or affiliate conversion."/>:<div className="wallet-list">{data.ledger.map(row=>{const payment=object(row.payments);const course=object(payment.courses);const isAffiliate=string(row.entry_type)==="affiliate_commission";return <div className="wallet-row" key={string(row.id)}><span className={isAffiliate?"affiliate-credit":"creator-credit"}>{isAffiliate?"A":"C"}</span><div><b>{isAffiliate?"Affiliate commission":"Course sale earning"}</b><small>{string(course.title)||string(payment.tx_ref)||"Mahadum transaction"} · {date(row.created_at)}</small></div><strong>+{money(number(row.amount_minor),string(row.currency)||"NGN")}</strong></div>})}</div>}
+    </section><aside className="wallet-side"><section className="panel"><h3>Withdraw funds</h3>{data.payoutAccount?<><p>Paid to {string(data.payoutAccount.account_name)} ····{string(data.payoutAccount.account_number_last4)}</p><form action={requestWalletPayout} className="crud-form"><label>Amount (NGN)<input name="amount" type="number" min="10000" step="100" max={Math.floor(available/100)} required placeholder="10,000"/></label><button className="button" disabled={available<1000000}>Request payout</button>{available<1000000?<small className="wallet-note">Your available balance must reach ₦10,000.</small>:null}</form></>:<><p>Connect and verify a bank account before requesting a payout.</p><div className="wallet-disabled-action">Bank account setup becomes available when Flutterwave is connected.</div></>}</section>
+      <section className="panel"><h3>Payout history</h3>{data.payouts.length===0?<p className="muted-copy">No payout requests yet.</p>:<div className="wallet-list compact">{data.payouts.map(row=><div className="wallet-row" key={string(row.id)}><div><b>{money(number(row.amount_minor),string(row.currency)||"NGN")}</b><small>{date(row.requested_at)}</small></div><span className={`status ${string(row.status)}`}>{string(row.status)}</span></div>)}</div>}</section>
+      {affiliate?<section className="panel wallet-affiliate"><span className="overline">Affiliate wallet</span><h3>{string(affiliate.code)}</h3><p>{data.referrals.filter(x=>x.converted_at).length} conversions from {data.referrals.length} attributed referrals.</p></section>:null}</aside></div>
+  </div>;
 }
 
 function FinanceAdmin({ data }: { data: DashboardData }) {

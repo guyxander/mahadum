@@ -1,18 +1,18 @@
 import { createClient } from "@/lib/supabase/server";
 
 export type Row=Record<string,unknown>;
-export type DashboardData={userId:string;name:string;email:string;profile:Row|null;categories:Row[];courses:Row[];enrollments:Row[];progress:Row[];certificates:Row[];reviews:Row[];users:Row[];creators:Row[];payments:Row[];refunds:Row[];payouts:Row[];ledger:Row[];affiliates:Row[];audit:Row[];settings:Row[]};
+export type DashboardData={generatedAt:number;userId:string;name:string;email:string;profile:Row|null;payoutAccount:Row|null;categories:Row[];courses:Row[];enrollments:Row[];progress:Row[];certificates:Row[];reviews:Row[];users:Row[];creators:Row[];payments:Row[];refunds:Row[];payouts:Row[];ledger:Row[];affiliates:Row[];referrals:Row[];audit:Row[];settings:Row[]};
 const rows=(value:unknown)=>Array.isArray(value)?value as Row[]:[];
 
 export async function loadDashboard(role:string){
   const client=await createClient();if(!client)return null;
   const {data:{user}}=await client.auth.getUser();if(!user)return null;
-  const base:DashboardData={userId:user.id,name:String(user.user_metadata?.full_name||user.email?.split("@")[0]||"Member"),email:user.email||"",profile:null,categories:[],courses:[],enrollments:[],progress:[],certificates:[],reviews:[],users:[],creators:[],payments:[],refunds:[],payouts:[],ledger:[],affiliates:[],audit:[],settings:[]};
+  const base:DashboardData={generatedAt:Date.now(),userId:user.id,name:String(user.user_metadata?.full_name||user.email?.split("@")[0]||"Member"),email:user.email||"",profile:null,payoutAccount:null,categories:[],courses:[],enrollments:[],progress:[],certificates:[],reviews:[],users:[],creators:[],payments:[],refunds:[],payouts:[],ledger:[],affiliates:[],referrals:[],audit:[],settings:[]};
   const [{data:profile},{data:categories}]=await Promise.all([client.from("profiles").select("*").eq("id",user.id).maybeSingle(),client.from("categories").select("*").order("sort_order")]);
   base.profile=profile as Row|null;base.categories=rows(categories);base.name=String(profile?.full_name||base.name);
   if(role==="creator"){
-    const results=await Promise.all([client.from("courses").select("*, categories(name), course_modules(id,title,position,lessons(id,title,description,video_url,duration_seconds,position,is_free_preview))").eq("creator_id",user.id).order("created_at",{ascending:false}),client.from("ledger_entries").select("*").eq("owner_id",user.id).order("created_at",{ascending:false}),client.from("payouts").select("*").eq("user_id",user.id).order("requested_at",{ascending:false}),client.from("affiliates").select("*").eq("user_id",user.id)]);
-    [base.courses,base.ledger,base.payouts,base.affiliates]=results.map(x=>rows(x.data));
+    const results=await Promise.all([client.from("courses").select("*, categories(name), course_modules(id,title,position,lessons(id,title,description,video_url,duration_seconds,position,is_free_preview))").eq("creator_id",user.id).order("created_at",{ascending:false}),client.from("ledger_entries").select("*, payments(tx_ref,courses(title))").eq("owner_id",user.id).order("created_at",{ascending:false}),client.from("payouts").select("*").eq("user_id",user.id).order("requested_at",{ascending:false}),client.from("affiliates").select("*").eq("user_id",user.id),client.from("referrals").select("*").eq("affiliate_id",user.id).order("attributed_at",{ascending:false}),client.from("payout_accounts").select("*").eq("user_id",user.id).maybeSingle()]);
+    [base.courses,base.ledger,base.payouts,base.affiliates,base.referrals]=results.slice(0,5).map(x=>rows(x.data));base.payoutAccount=(results[5].data as Row|null)||null;
   }else if(role==="learner"){
     const results=await Promise.all([client.from("enrollments").select("*, courses(id,title,slug,short_description,course_modules(id,lessons(id,title,position)))").eq("learner_id",user.id).order("enrolled_at",{ascending:false}),client.from("lesson_progress").select("*").order("updated_at",{ascending:false}),client.from("certificates").select("*, enrollments!inner(learner_id,completed_at,courses(title))").eq("enrollments.learner_id",user.id),client.from("payments").select("*, courses(title)").eq("learner_id",user.id).order("created_at",{ascending:false}),client.from("courses").select("*, categories(name)").eq("status","published").order("published_at",{ascending:false}),client.from("reviews").select("*").eq("learner_id",user.id)]);
     [base.enrollments,base.progress,base.certificates,base.payments,base.courses,base.reviews]=results.map(x=>rows(x.data));

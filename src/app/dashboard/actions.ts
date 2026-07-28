@@ -445,3 +445,13 @@ export async function updateCourseThumbnail(data: FormData) {
   revalidatePath("/dashboard/creator/course-builder");
   revalidatePath("/courses");
 }
+
+export async function requestWalletPayout(data: FormData) {
+  const { client } = await context("creator");
+  const amount = Number(text(data, "amount"));
+  if (!Number.isFinite(amount) || amount < 10000)
+    throw new Error("The minimum payout is NGN 10,000");
+  const { error } = await client.rpc("request_payout", { p_amount_minor: Math.round(amount * 100) });
+  if (error) throw new Error(error.message);
+  revalidatePath("/dashboard/creator/wallet");
+}
