@@ -685,7 +685,7 @@ function PayoutPanel({ data }: { data: DashboardData }) {
     <div className="dashboard-page">
       <PageHead
         title="Payout settings"
-        subtitle="Payouts require a verified Flutterwave bank account."
+        subtitle="Payouts require a verified Paystack transfer recipient."
       />
       <div className="metric-grid">
         <article className="metric-card">
@@ -700,7 +700,7 @@ function PayoutPanel({ data }: { data: DashboardData }) {
       <section className="panel">
         <h3>Bank verification pending configuration</h3>
         <p>
-          Bank details will be tokenised and verified through Flutterwave when
+          Bank details will be tokenised and verified through Paystack when
           payment credentials are configured. Mahadum will not store raw account
           numbers.
         </p>
@@ -730,7 +730,7 @@ function WalletPanel({ data }: { data: DashboardData }) {
     </div>
     <div className="wallet-grid"><section className="panel"><div className="panel-head"><div><h3>Wallet activity</h3><p>Every earning is recorded in your secure ledger.</p></div></div>
       {data.ledger.length===0?<Empty text="Your earnings will appear here after a verified course sale or affiliate conversion."/>:<div className="wallet-list">{data.ledger.map(row=>{const payment=object(row.payments);const course=object(payment.courses);const isAffiliate=string(row.entry_type)==="affiliate_commission";return <div className="wallet-row" key={string(row.id)}><span className={isAffiliate?"affiliate-credit":"creator-credit"}>{isAffiliate?"A":"C"}</span><div><b>{isAffiliate?"Affiliate commission":"Course sale earning"}</b><small>{string(course.title)||string(payment.tx_ref)||"Mahadum transaction"} · {date(row.created_at)}</small></div><strong>+{money(number(row.amount_minor),string(row.currency)||"NGN")}</strong></div>})}</div>}
-    </section><aside className="wallet-side"><section className="panel"><h3>Withdraw funds</h3>{data.payoutAccount?<><p>Paid to {string(data.payoutAccount.account_name)} ····{string(data.payoutAccount.account_number_last4)}</p><form action={requestWalletPayout} className="crud-form"><label>Amount (NGN)<input name="amount" type="number" min="10000" step="100" max={Math.floor(available/100)} required placeholder="10,000"/></label><button className="button" disabled={available<1000000}>Request payout</button>{available<1000000?<small className="wallet-note">Your available balance must reach ₦10,000.</small>:null}</form></>:<><p>Connect and verify a bank account before requesting a payout.</p><div className="wallet-disabled-action">Bank account setup becomes available when Flutterwave is connected.</div></>}</section>
+    </section><aside className="wallet-side"><section className="panel"><h3>Withdraw funds</h3>{data.payoutAccount?<><p>Paid to {string(data.payoutAccount.account_name)} ····{string(data.payoutAccount.account_number_last4)}</p><form action={requestWalletPayout} className="crud-form"><label>Amount (NGN)<input name="amount" type="number" min="10000" step="100" max={Math.floor(available/100)} required placeholder="10,000"/></label><button className="button" disabled={available<1000000}>Request payout</button>{available<1000000?<small className="wallet-note">Your available balance must reach ₦10,000.</small>:null}</form></>:<><p>Connect and verify a bank account before requesting a payout.</p><div className="wallet-disabled-action">Bank account setup becomes available when Paystack is connected.</div></>}</section>
       <section className="panel"><h3>Payout history</h3>{data.payouts.length===0?<p className="muted-copy">No payout requests yet.</p>:<div className="wallet-list compact">{data.payouts.map(row=><div className="wallet-row" key={string(row.id)}><div><b>{money(number(row.amount_minor),string(row.currency)||"NGN")}</b><small>{date(row.requested_at)}</small></div><span className={`status ${string(row.status)}`}>{string(row.status)}</span></div>)}</div>}</section>
       {affiliate?<section className="panel wallet-affiliate"><span className="overline">Affiliate wallet</span><h3>{string(affiliate.code)}</h3><p>{data.referrals.filter(x=>x.converted_at).length} conversions from {data.referrals.length} attributed referrals.</p></section>:null}</aside></div>
   </div>;

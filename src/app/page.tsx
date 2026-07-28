@@ -132,7 +132,7 @@ export default function Home() {
         <p>Trusted by learners building at</p>
         <div>
           <span>paystack</span>
-          <span>flutterwave</span>
+          <span>kuda</span>
           <span>moniepoint</span>
           <span>piggyvest</span>
           <span>techcabal</span>
