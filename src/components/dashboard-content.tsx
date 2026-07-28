@@ -710,13 +710,10 @@ function PayoutPanel({ data }: { data: DashboardData }) {
 }
 
 function WalletPanel({ data }: { data: DashboardData }) {
-  const holdMs = 7 * 86400000;
   const creator = data.ledger.filter(x => string(x.entry_type) === "creator_earning").reduce((s,x)=>s+number(x.amount_minor),0);
   const affiliateAmount = data.ledger.filter(x => string(x.entry_type) === "affiliate_commission").reduce((s,x)=>s+number(x.amount_minor),0);
   const total = data.ledger.reduce((s,x)=>s+number(x.amount_minor),0);
-  const pendingEntries = data.ledger.filter(x => data.generatedAt-new Date(string(x.created_at)).getTime()<holdMs);
-  const pending = pendingEntries.reduce((s,x)=>s+number(x.amount_minor),0);
-  const nextSettlement = pendingEntries.length ? Math.min(...pendingEntries.map(x=>new Date(string(x.created_at)).getTime()+holdMs)) : null;
+  const pending = 0;
   const reserved = data.payouts.filter(x => ["pending","approved","processing","paid"].includes(string(x.status))).reduce((s,x)=>s+number(x.amount_minor),0);
   const available = Math.max(0,total-pending-reserved);
   const paid = data.payouts.filter(x=>string(x.status)==="paid").reduce((s,x)=>s+number(x.amount_minor),0);
@@ -725,7 +722,7 @@ function WalletPanel({ data }: { data: DashboardData }) {
     <PageHead title="Wallet" subtitle="Your creator earnings, affiliate commissions, and payouts in one place." />
     <section className="wallet-hero"><div><span>Available balance</span><strong>{money(available)}</strong><small>Settled funds ready for withdrawal</small></div><div><span>Next payout window</span><b>Friday</b><small>Minimum withdrawal: ₦10,000</small></div></section>
     <div className="metric-grid wallet-metrics">
-      <article className="metric-card"><span>Pending settlement</span><strong>{money(pending)}</strong><small>{nextSettlement?`Next funds settle ${date(new Date(nextSettlement))}`:"No funds awaiting settlement"}</small></article>
+      <article className="metric-card"><span>Pending settlement</span><strong>{money(pending)}</strong><small>Earnings are available immediately</small></article>
       <article className="metric-card"><span>Creator earnings</span><strong>{money(creator)}</strong><small>70% share from course sales</small></article>
       <article className="metric-card"><span>Affiliate earnings</span><strong>{money(affiliateAmount)}</strong><small>{affiliate?`${number(affiliate.level_one_bps)/100}% direct · ${number(affiliate.level_two_bps)/100}% level two`:"Activate affiliates to earn"}</small></article>
       <article className="metric-card"><span>Total paid out</span><strong>{money(paid)}</strong><small>Completed withdrawals</small></article>
