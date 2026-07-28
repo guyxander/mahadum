@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { listPaystackBanks, type PaystackBank } from "@/lib/payments/paystack";
 
 export type Row=Record<string,unknown>;
@@ -19,8 +20,12 @@ export async function loadDashboard(role:string){
     const results=await Promise.all([client.from("enrollments").select("*, courses(id,title,slug,short_description,course_modules(id,lessons(id,title,position)))").eq("learner_id",user.id).order("enrolled_at",{ascending:false}),client.from("lesson_progress").select("*").order("updated_at",{ascending:false}),client.from("certificates").select("*, enrollments!inner(learner_id,completed_at,courses(title))").eq("enrollments.learner_id",user.id),client.from("payments").select("*, courses(title)").eq("learner_id",user.id).order("created_at",{ascending:false}),client.from("courses").select("*, categories(name)").eq("status","published").order("published_at",{ascending:false}),client.from("reviews").select("*").eq("learner_id",user.id)]);
     [base.enrollments,base.progress,base.certificates,base.payments,base.courses,base.reviews]=results.map(x=>rows(x.data));
   }else{
-    const results=await Promise.all([client.from("profiles").select("*, user_roles(role)").order("created_at",{ascending:false}),client.from("courses").select("*, categories(name), profiles!courses_creator_id_fkey(full_name)").order("created_at",{ascending:false}),client.from("creator_profiles").select("*, profiles(full_name)").order("verification_status"),client.from("payments").select("*, courses(title)").order("created_at",{ascending:false}),client.from("refunds").select("*, payments(tx_ref)").order("created_at",{ascending:false}),client.from("payouts").select("*, profiles(full_name)").order("requested_at",{ascending:false}),client.from("ledger_entries").select("*").order("created_at",{ascending:false}),client.from("affiliates").select("*, profiles(full_name)").order("status"),client.from("audit_logs").select("*").order("created_at",{ascending:false}).limit(100),client.from("platform_settings").select("*").order("key")]);
-    [base.users,base.courses,base.creators,base.payments,base.refunds,base.payouts,base.ledger,base.affiliates,base.audit,base.settings]=results.map(x=>rows(x.data));
+    const admin=createAdminClient();
+    const [profilesResult,rolesResult,authResult,...results]=await Promise.all([client.from("profiles").select("*").order("created_at",{ascending:false}),client.from("user_roles").select("user_id,role"),admin.auth.admin.listUsers({page:1,perPage:1000}),client.from("courses").select("*, categories(name), profiles!courses_creator_id_fkey(full_name)").order("created_at",{ascending:false}),client.from("creator_profiles").select("*, profiles(full_name)").order("verification_status"),client.from("payments").select("*, courses(title)").order("created_at",{ascending:false}),client.from("refunds").select("*, payments(tx_ref)").order("created_at",{ascending:false}),client.from("payouts").select("*, profiles(full_name)").order("requested_at",{ascending:false}),client.from("ledger_entries").select("*").order("created_at",{ascending:false}),client.from("affiliates").select("*, profiles(full_name)").order("status"),client.from("audit_logs").select("*").order("created_at",{ascending:false}).limit(100),client.from("platform_settings").select("*").order("key")]);
+    if(profilesResult.error)throw profilesResult.error;if(rolesResult.error)throw rolesResult.error;if(authResult.error)throw authResult.error;
+    const roleRows=rows(rolesResult.data);const emails=new Map(authResult.data.users.map(item=>[item.id,item.email||""]));
+    base.users=rows(profilesResult.data).map(profile=>({...profile,email:emails.get(String(profile.id))||"",user_roles:roleRows.filter(roleRow=>roleRow.user_id===profile.id)}));
+    [base.courses,base.creators,base.payments,base.refunds,base.payouts,base.ledger,base.affiliates,base.audit,base.settings]=results.map(x=>rows(x.data));
   }
   return base;
 }
