@@ -446,12 +446,34 @@ export async function updateCourseThumbnail(data: FormData) {
   revalidatePath("/courses");
 }
 
-export async function requestWalletPayout(data: FormData) {
+export type WalletActionState = { error?: string; success?: string };
+
+export async function requestWalletPayout(_previous: WalletActionState, data: FormData): Promise<WalletActionState> {
   const { client } = await context("creator");
   const amount = Number(text(data, "amount"));
   if (!Number.isFinite(amount) || amount < 10000)
-    throw new Error("The minimum payout is NGN 10,000");
+    return { error: "The minimum payout is NGN 10,000." };
   const { error } = await client.rpc("request_payout", { p_amount_minor: Math.round(amount * 100) });
-  if (error) throw new Error(error.message);
+  if (error) return { error: error.message };
   revalidatePath("/dashboard/creator/wallet");
+  return { success: "Payout request submitted for review." };
+}
+
+export async function configurePayoutAccount(_previous: WalletActionState, data: FormData): Promise<WalletActionState> {
+  const { client, user } = await context("creator");
+  const secret = process.env.PAYSTACK_SECRET_KEY;
+  if (!secret) return { error: "Paystack is not configured." };
+  const bankCode = text(data, "bank_code");
+  const accountNumber = text(data, "account_number").replace(/\s/g, "");
+  if (!/^\d{10}$/.test(accountNumber) || !bankCode) return { error: "Choose a bank and enter a valid 10-digit account number." };
+  const resolveResponse = await fetch(`https://api.paystack.co/bank/resolve?account_number=${encodeURIComponent(accountNumber)}&bank_code=${encodeURIComponent(bankCode)}`, { headers:{Authorization:`Bearer ${secret}`}, cache:"no-store" });
+  const resolved = await resolveResponse.json() as {status?:boolean;message?:string;data?:{account_name?:string}};
+  if (!resolveResponse.ok || !resolved.status || !resolved.data?.account_name) return { error: resolved.message || "Paystack could not verify this bank account." };
+  const recipientResponse = await fetch("https://api.paystack.co/transferrecipient", { method:"POST", headers:{Authorization:`Bearer ${secret}`,"Content-Type":"application/json"}, body:JSON.stringify({type:"nuban",name:resolved.data.account_name,account_number:accountNumber,bank_code:bankCode,currency:"NGN"}) });
+  const recipient = await recipientResponse.json() as {status?:boolean;message?:string;data?:{recipient_code?:string}};
+  if (!recipientResponse.ok || !recipient.status || !recipient.data?.recipient_code) return { error: recipient.message || "Paystack could not create the payout recipient." };
+  const { error } = await client.from("payout_accounts").upsert({user_id:user.id,provider:"paystack",account_name:resolved.data.account_name,bank_code:bankCode,account_number_last4:accountNumber.slice(-4),provider_recipient_code:recipient.data.recipient_code},{onConflict:"user_id"});
+  if (error) return { error: "The verified payout account could not be saved." };
+  revalidatePath("/dashboard/creator/wallet");
+  return { success: `Bank account verified for ${resolved.data.account_name}.` };
 }

@@ -26,3 +26,15 @@ export async function verifyPaystackTransaction(reference: string, secret: strin
   const result = await response.json() as { status?: boolean; data?: PaystackTransaction };
   return result.status && result.data ? result.data : null;
 }
+
+export type PaystackBank = { name: string; code: string };
+
+export async function listPaystackBanks(secret: string): Promise<PaystackBank[]> {
+  const response = await fetch("https://api.paystack.co/bank?country=nigeria&currency=NGN&perPage=100", {
+    headers: { Authorization: `Bearer ${secret}` },
+    next: { revalidate: 86400 },
+  });
+  if (!response.ok) return [];
+  const result = await response.json() as { status?: boolean; data?: PaystackBank[] };
+  return result.status && Array.isArray(result.data) ? result.data.map(({name,code})=>({name,code})).sort((a,b)=>a.name.localeCompare(b.name)) : [];
+}
