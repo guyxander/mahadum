@@ -5,6 +5,7 @@ import { InteractionFeedback } from "@/components/interaction-feedback";
 export const metadata: Metadata = {
   title: "Mahadum — Learn from people who do the work",
   description: "Practical courses from Africa's most ambitious creators.",
+  icons: { icon: [{ url: "/icon.svg", type: "image/svg+xml" }], shortcut: "/icon.svg" },
 };
 
 export default function RootLayout({

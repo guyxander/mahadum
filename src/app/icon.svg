@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs><linearGradient id="mahadum" x1="8" y1="4" x2="56" y2="60" gradientUnits="userSpaceOnUse"><stop stop-color="#9b6cf2"/><stop offset="1" stop-color="#5b21b6"/></linearGradient></defs>
+  <rect width="64" height="64" rx="18" fill="url(#mahadum)"/>
+  <path d="M15 47V17h8.2L32 32.7 40.8 17H49v30h-7.7V29.4L34.8 41h-5.6l-6.5-11.6V47H15Z" fill="#fff"/>
+</svg>
