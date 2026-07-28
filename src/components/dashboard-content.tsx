@@ -725,7 +725,7 @@ function WalletPanel({ data }: { data: DashboardData }) {
     <PageHead title="Wallet" subtitle="Your creator earnings, affiliate commissions, and payouts in one place." />
     <section className="wallet-hero"><div><span>Available balance</span><strong>{money(available)}</strong><small>Settled funds ready for withdrawal</small></div><div><span>Next payout window</span><b>Friday</b><small>Minimum withdrawal: ₦10,000</small></div></section>
     <div className="metric-grid wallet-metrics">
-      <article className="metric-card"><span>Pending settlement</span><strong>{money(pending)}</strong><small>{nextSettlement?`Next funds settle ${date(nextSettlement)}`:"No funds awaiting settlement"}</small></article>
+      <article className="metric-card"><span>Pending settlement</span><strong>{money(pending)}</strong><small>{nextSettlement?`Next funds settle ${date(new Date(nextSettlement))}`:"No funds awaiting settlement"}</small></article>
       <article className="metric-card"><span>Creator earnings</span><strong>{money(creator)}</strong><small>70% share from course sales</small></article>
       <article className="metric-card"><span>Affiliate earnings</span><strong>{money(affiliateAmount)}</strong><small>{affiliate?`${number(affiliate.level_one_bps)/100}% direct · ${number(affiliate.level_two_bps)/100}% level two`:"Activate affiliates to earn"}</small></article>
       <article className="metric-card"><span>Total paid out</span><strong>{money(paid)}</strong><small>Completed withdrawals</small></article>
