@@ -372,9 +372,9 @@ function CreatorCourses({ data }: { data: DashboardData }) {
                 {string(course.status)}
               </span>
               <div className="row-actions">
+                <Link className="manage-course-link" href={`/dashboard/creator/course-builder?course=${string(course.id)}&step=details`}>Manage course</Link>
                 {(course.status === "draft" || course.status === "rejected") && (
                   <>
-                    <Link href={`/dashboard/creator/course-builder?course=${string(course.id)}&step=details`}>Edit</Link>
                     <DeleteCourseButton courseId={string(course.id)} courseTitle={string(course.title)} action={deleteCourse} />
                   </>
                 )}

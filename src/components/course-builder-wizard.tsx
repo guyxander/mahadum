@@ -33,12 +33,16 @@ function Progress({ step }: { step: string }) {
 }
 
 function DetailsForm({ categories, course }: { categories: Row[]; course?: Row }) {
+  const savedOutcomes = Array.isArray(course?.learning_outcomes) ? course.learning_outcomes.map(String) : [];
+  const legacyOutcomes = string(course?.description).split("•").slice(1).map((item) => item.trim()).filter(Boolean).slice(0, 8);
+  const outcomes = savedOutcomes.length > 0 ? savedOutcomes : legacyOutcomes;
   return (
     <form action={saveCourse} className="crud-form">
       <input type="hidden" name="id" value={string(course?.id)} />
       <label>Course title<input name="title" defaultValue={string(course?.title)} required /></label>
       <label>Short description<input name="short_description" defaultValue={string(course?.short_description)} maxLength={180} required /></label>
-      <label>Full description<textarea name="description" defaultValue={string(course?.description)} required /></label>
+      <label>Course overview<textarea name="description" defaultValue={string(course?.description)} required placeholder="Explain what the course covers, who it is for, and why it is valuable." /></label>
+      <label>Learning outcomes <small>Enter one outcome per line.</small><textarea name="learning_outcomes" defaultValue={outcomes.join("\n")} required placeholder={"Plan and structure a complete website\nBuild responsive pages with AI tools\nDeploy a production website"} /></label>
       <div className="form-row">
         <label>Category<select name="category_id" defaultValue={string(course?.category_id)} required><option value="">Select category</option>{categories.map((category) => <option value={string(category.id)} key={string(category.id)}>{string(category.name)}</option>)}</select></label>
         <label>Price (NGN)<input name="price" type="number" min="0" step="100" defaultValue={course ? number(course.price_minor) / 100 : undefined} required /></label>

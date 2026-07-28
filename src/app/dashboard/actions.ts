@@ -36,6 +36,11 @@ export async function saveCourse(data: FormData) {
   const { client, user } = await context("creator");
   const id = text(data, "id");
   const title = text(data, "title");
+  const learningOutcomes = text(data, "learning_outcomes")
+    .split(/\r?\n/)
+    .map((item) => item.replace(/^[-•✓]\s*/, "").trim())
+    .filter(Boolean)
+    .slice(0, 20);
   const payload = {
     creator_id: user.id,
     category_id: text(data, "category_id") || null,
@@ -43,6 +48,7 @@ export async function saveCourse(data: FormData) {
     slug: `${slugify(title)}-${user.id.slice(0, 8)}`,
     short_description: text(data, "short_description"),
     description: text(data, "description"),
+    learning_outcomes: learningOutcomes,
     price_minor: Math.round(Number(text(data, "price")) * 100),
     currency: "NGN",
   };
@@ -50,10 +56,11 @@ export async function saveCourse(data: FormData) {
     !title ||
     !payload.short_description ||
     !payload.description ||
+    learningOutcomes.length === 0 ||
     !Number.isFinite(payload.price_minor) ||
     payload.price_minor < 0
   )
-    throw new Error("Complete all course fields");
+    throw new Error("Complete all course fields and add at least one learning outcome");
   let courseId = id;
   if (id) {
     const { error } = await client

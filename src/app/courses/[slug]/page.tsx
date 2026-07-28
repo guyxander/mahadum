@@ -24,7 +24,7 @@ export default async function CoursePage({ params }: { params: Promise<{ slug: s
 
   const coursePromise = client
     .from("courses")
-    .select("id,creator_id,title,short_description,description,thumbnail_path,price_minor,currency,trailer_url,categories(name),profiles!courses_creator_id_fkey(full_name,bio),course_modules(id,title,position,lessons(id,title,duration_seconds,is_free_preview,position))")
+    .select("id,creator_id,title,short_description,description,learning_outcomes,thumbnail_path,price_minor,currency,trailer_url,categories(name),profiles!courses_creator_id_fkey(full_name,bio),course_modules(id,title,position,lessons(id,title,duration_seconds,is_free_preview,position))")
     .eq("slug", slug)
     .eq("status", "published")
     .maybeSingle();
@@ -42,7 +42,9 @@ export default async function CoursePage({ params }: { params: Promise<{ slug: s
   const enrollment = user && !isCreator ? await client.from("enrollments").select("id").eq("learner_id", user.id).eq("course_id", course.id).maybeSingle() : null;
   const isEnrolled = Boolean(enrollment?.data);
   const firstLesson = lessons[0];
-  const { introduction, outcomes } = formatOverview(course.description);
+  const formatted = formatOverview(course.description);
+  const introduction = formatted.introduction;
+  const outcomes: string[] = Array.isArray(course.learning_outcomes) && course.learning_outcomes.length ? course.learning_outcomes.map(String) : formatted.outcomes;
   const creatorInitials = (creator?.full_name || "Mahadum creator").split(" ").map((part) => part[0]).join("").slice(0, 2).toUpperCase();
   const thumbnailUrl = course.thumbnail_path?.startsWith("public/") ? client.storage.from("course-thumbnails").getPublicUrl(course.thumbnail_path).data.publicUrl : "";
 
