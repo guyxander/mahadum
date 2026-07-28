@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { createClient } from "@/lib/supabase/server";
 import { PublicHeader } from "@/components/public-header";
 
@@ -10,6 +11,7 @@ type Course = {
   short_description: string;
   price_minor: number;
   currency: string;
+  thumbnail_path: string | null;
   categories: { name: string } | null;
   profiles: { full_name: string } | null;
 };
@@ -39,7 +41,7 @@ export default async function CoursesPage({
     let query = client
       .from("courses")
       .select(
-        "id,title,slug,short_description,price_minor,currency,categories(name),profiles!courses_creator_id_fkey(full_name)",
+        "id,title,slug,short_description,thumbnail_path,price_minor,currency,categories(name),profiles!courses_creator_id_fkey(full_name)",
       )
       .eq("status", "published")
       .order("published_at", { ascending: false });
@@ -96,7 +98,9 @@ export default async function CoursesPage({
               </p>
             </div>
           ) : (
-            courses.map((course, index) => (
+            courses.map((course, index) => {
+              const thumbnailUrl = course.thumbnail_path?.startsWith("public/") ? client?.storage.from("course-thumbnails").getPublicUrl(course.thumbnail_path).data.publicUrl : "";
+              return (
               <Link
                 className="course-card"
                 href={`/courses/${course.slug}`}
@@ -105,12 +109,13 @@ export default async function CoursesPage({
                 <div
                   className={`course-cover ${["course-purple", "course-orange", "course-blue"][index % 3]}`}
                 >
+                  {thumbnailUrl ? <Image className="marketplace-thumbnail" src={thumbnailUrl} alt={`${course.title} thumbnail`} width={640} height={360} unoptimized /> : null}
                   <span>{course.categories?.name || "Course"}</span>
-                  <div className="cover-shape">
+                  {!thumbnailUrl ? <div className="cover-shape">
                     <i />
                     <i />
                     <i />
-                  </div>
+                  </div> : null}
                 </div>
                 <div className="course-content">
                   <h3>{course.title}</h3>
@@ -131,7 +136,8 @@ export default async function CoursesPage({
                   </div>
                 </div>
               </Link>
-            ))
+              );
+            })
           )}
         </div>
       </section>
