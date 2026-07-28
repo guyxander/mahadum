@@ -44,6 +44,7 @@ export default async function CoursePage({ params }: { params: Promise<{ slug: s
   const firstLesson = lessons[0];
   const { introduction, outcomes } = formatOverview(course.description);
   const creatorInitials = (creator?.full_name || "Mahadum creator").split(" ").map((part) => part[0]).join("").slice(0, 2).toUpperCase();
+  const thumbnailUrl = course.thumbnail_path?.startsWith("public/") ? client.storage.from("course-thumbnails").getPublicUrl(course.thumbnail_path).data.publicUrl : "";
 
   return (
     <main className="catalogue-page course-sales-page">
@@ -62,7 +63,7 @@ export default async function CoursePage({ params }: { params: Promise<{ slug: s
           </div>
         </div>
         <aside className="course-checkout-card">
-          <div className="course-preview-art" aria-label="Course video preview illustration"><span>AI</span><div><i /><i /><i /></div><b>▶</b></div>
+          {thumbnailUrl ? <img className="course-thumbnail" src={thumbnailUrl} alt={`${course.title} course thumbnail`} /> : <div className="course-preview-art" aria-label="Course video preview illustration"><span>AI</span><div><i /><i /><i /></div><b>▶</b></div>}
           <div className="checkout-body">
             <small>Complete course</small><strong className="course-price">{price}</strong>
             {isCreator ? <Link className="button" href={`/dashboard/creator/course-builder?course=${course.id}&step=details`}>Manage this course</Link> : isEnrolled && firstLesson ? <Link className="button" href={`/learn/${course.id}/${firstLesson.id}`}>Continue learning</Link> : user ? <CheckoutButton courseId={course.id} /> : <Link className="button" href="/login">Log in to enroll</Link>}

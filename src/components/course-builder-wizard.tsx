@@ -76,7 +76,7 @@ export function CourseBuilderWizard({ data, courseId, step }: { data: DashboardD
 
     {course && current === "modules" ? <section className="panel course-editor">
       <span className="overline">Step 2 of 3</span><h3>Build your course content</h3><p className="wizard-copy">Organise lessons into modules. Each lesson needs a valid YouTube link.</p>
-      <div className="builder-optional"><strong>Course thumbnail <small>Optional</small></strong><AssetUploader userId={data.userId} courseId={string(course.id)} /></div>
+      <div className="builder-optional"><strong>Course thumbnail <small>Optional</small></strong><AssetUploader userId={data.userId} courseId={string(course.id)} currentPath={string(course.thumbnail_path)} /></div>
 
       {modules.length === 0 ? <form action={addFirstLesson} className="first-lesson-form"><input type="hidden" name="course_id" value={string(course.id)} /><div><span className="overline">Module 1</span><h3>Add your first lesson</h3><p>We will create your first module automatically. You can rename it afterward.</p></div><LessonFields /><button className="button">Save first lesson</button></form> : null}
 

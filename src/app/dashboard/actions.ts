@@ -423,11 +423,18 @@ export async function savePublicSetting(data: FormData) {
   revalidatePath("/dashboard/admin/settings");
 }
 export async function updateCourseThumbnail(data: FormData) {
-  const { client } = await context("creator");
-  const { error } = await client
+  const { client, user } = await context("creator");
+  const path = text(data, "path");
+  if (!path.startsWith(`public/${user.id}/`)) throw new Error("Invalid thumbnail path.");
+  const { data: updated, error } = await client
     .from("courses")
-    .update({ thumbnail_path: text(data, "path") })
-    .eq("id", text(data, "course_id"));
+    .update({ thumbnail_path: path })
+    .eq("id", text(data, "course_id"))
+    .eq("creator_id", user.id)
+    .select("id")
+    .maybeSingle();
   if (error) throw error;
+  if (!updated) throw new Error("Course thumbnail could not be updated.");
   revalidatePath("/dashboard/creator/course-builder");
+  revalidatePath("/courses");
 }
