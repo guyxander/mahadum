@@ -293,6 +293,23 @@ export async function moderateCourse(data: FormData) {
   if (error) throw error;
   revalidatePath("/dashboard/admin/courses");
 }
+export async function adminUpdateCourse(data: FormData) {
+  const { client } = await context("admin");
+  const id = text(data, "id");
+  const title = text(data, "title");
+  const price = Number(text(data, "price"));
+  if (!id || !title) throw new Error("Course and title are required");
+  if (!Number.isFinite(price) || price < 0) throw new Error("Enter a valid course price");
+  const { error } = await client.from("courses").update({
+    title,
+    category_id: text(data, "category_id") || null,
+    price_minor: Math.round(price * 100),
+    is_featured: data.get("is_featured") === "on",
+  }).eq("id", id);
+  if (error) throw error;
+  revalidatePath("/dashboard/admin/courses");
+  revalidatePath("/courses");
+}
 export async function moderateCreator(data: FormData) {
   const { client } = await context("admin");
   const verification_status = text(data, "status");
