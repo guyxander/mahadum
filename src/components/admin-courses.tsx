@@ -35,8 +35,12 @@ export function AdminCourses({courses,categories}:{courses:Row[];categories:Row[
 }
 
 const initialUpdateState:AdminCourseUpdateState={ok:false,message:""};
+async function saveCourseWithFeedback(previous:AdminCourseUpdateState,data:FormData){
+  const [result]=await Promise.all([adminUpdateCourse(previous,data),new Promise(resolve=>window.setTimeout(resolve,500))]);
+  return result;
+}
 function AdminCourseEditForm({course,categories}:{course:Row;categories:Row[]}){
-  const [state,action,pending]=useActionState(adminUpdateCourse,initialUpdateState);
+  const [state,action,pending]=useActionState(saveCourseWithFeedback,initialUpdateState);
   return <form action={action}><input type="hidden" name="id" value={text(course.id)}/><b>Edit core details</b><label>Title<input name="title" defaultValue={text(course.title)} required/></label><label>Category<select name="category_id" defaultValue={text(course.category_id)}><option value="">Uncategorised</option>{categories.map(item=><option key={text(item.id)} value={text(item.id)}>{text(item.name)}</option>)}</select></label><label>Price (NGN)<input name="price" type="number" min="0" step="100" defaultValue={number(course.price_minor)/100} required/></label><label className="admin-course-check"><input name="is_featured" type="checkbox" defaultChecked={Boolean(course.is_featured)}/> Featured course</label><button className="outline-button" disabled={pending}>{pending?"Saving…":"Save details"}</button>{state.message?<small className={state.ok?"form-success":"form-error"} role="status">{state.message}</small>:null}</form>;
 }
 
