@@ -27,6 +27,18 @@ export async function signUp(formData: FormData) {
 
 export async function signOut(){const client=await createClient();if(client)await client.auth.signOut();redirect("/")}
 
+export async function signInWithGoogle(formData:FormData){
+  const client=await createClient();
+  if(!client)redirect("/login?message=Google+sign-in+is+temporarily+unavailable");
+  const site=process.env.NEXT_PUBLIC_SITE_URL||"https://mahadum.vercel.app";
+  const next=String(formData.get("next")||"/dashboard/learner/my-learning");
+  const safeNext=next.startsWith("/")&&!next.startsWith("//")?next:"/dashboard/learner/my-learning";
+  const role=formData.get("role")==="creator"?"creator":"learner";
+  const {data,error}=await client.auth.signInWithOAuth({provider:"google",options:{redirectTo:`${site}/auth/callback?next=${encodeURIComponent(safeNext)}&role=${role}`}});
+  if(error||!data.url){console.error("[auth/google] OAuth start failed",{code:error?.code,status:error?.status});redirect(`/login?message=${encodeURIComponent(error?.message||"Google sign-in could not start")}`);}
+  redirect(data.url);
+}
+
 export async function requestPasswordReset(formData:FormData){
   const client=await createClient();if(!client)redirect("/forgot-password?error=Supabase+is+not+configured");
   const email=String(formData.get("email")||"");
