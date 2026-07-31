@@ -1,8 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useActionState, useMemo, useState } from "react";
 import Link from "next/link";
-import { adminUpdateCourse, moderateCourse } from "@/app/dashboard/actions";
+import { adminUpdateCourse, moderateCourse, type AdminCourseUpdateState } from "@/app/dashboard/actions";
 import { createClient } from "@/lib/supabase/browser";
 import type { Row } from "@/lib/dashboard";
 
@@ -28,10 +28,16 @@ export function AdminCourses({courses,categories}:{courses:Row[];categories:Row[
       <div className="admin-course-list">{filtered.length===0?<div className="empty-state"><b>No matching courses</b><p>Try changing your search or filters.</p></div>:filtered.map(course=>{const statusValue=text(course.status)||"draft";const image=thumbnail(course.thumbnail_path);return <article className="admin-course-row" key={text(course.id)}>
         <div className="admin-course-title">{image?<span className="admin-course-thumb" style={{backgroundImage:`url(${image})`}} aria-hidden="true"/>:<span>{text(course.title).slice(0,2).toUpperCase()}</span>}<div><b>{text(course.title)||"Untitled course"}</b><small>{text(object(course.categories).name)||"Uncategorised"}</small></div></div>
         <span className="admin-course-creator"><small>Creator</small>{text(object(course.profiles).full_name)||"Unknown creator"}</span><span className="admin-course-price"><small>Price</small>{money(course.price_minor,course.currency)}</span><span className="admin-course-enrolments"><small>Enrolments</small>{enrollmentCount(course)}</span><span className="admin-course-updated"><small>Updated</small>{date(course.updated_at)}</span><span className={`status ${statusValue}`}>{statusValue.replace("_"," ")}</span>
-        <div className="admin-course-actions"><details><summary>Manage</summary><div className="admin-course-menu"><Link href={`/courses/${text(course.slug)}`}>View course</Link><form action={adminUpdateCourse}><input type="hidden" name="id" value={text(course.id)}/><b>Edit core details</b><label>Title<input name="title" defaultValue={text(course.title)} required/></label><label>Category<select name="category_id" defaultValue={text(course.category_id)}><option value="">Uncategorised</option>{categories.map(item=><option key={text(item.id)} value={text(item.id)}>{text(item.name)}</option>)}</select></label><label>Price (NGN)<input name="price" type="number" min="0" step="100" defaultValue={number(course.price_minor)/100} required/></label><label className="admin-course-check"><input name="is_featured" type="checkbox" defaultChecked={Boolean(course.is_featured)}/> Featured course</label><button className="outline-button">Save details</button></form><div className="admin-course-moderation">{statusValue!=="published"&&<CourseStatus id={text(course.id)} status="published" label="Publish"/>}{statusValue==="published"&&<CourseStatus id={text(course.id)} status="archived" label="Unpublish"/>}</div></div></details></div>
+        <div className="admin-course-actions"><details><summary>Manage</summary><div className="admin-course-menu"><Link href={`/courses/${text(course.slug)}`}>View course</Link><AdminCourseEditForm course={course} categories={categories}/><div className="admin-course-moderation">{statusValue!=="published"&&<CourseStatus id={text(course.id)} status="published" label="Publish"/>}{statusValue==="published"&&<CourseStatus id={text(course.id)} status="archived" label="Unpublish"/>}</div></div></details></div>
       </article>})}</div>
     </section>
   </div>;
+}
+
+const initialUpdateState:AdminCourseUpdateState={ok:false,message:""};
+function AdminCourseEditForm({course,categories}:{course:Row;categories:Row[]}){
+  const [state,action,pending]=useActionState(adminUpdateCourse,initialUpdateState);
+  return <form action={action}><input type="hidden" name="id" value={text(course.id)}/><b>Edit core details</b><label>Title<input name="title" defaultValue={text(course.title)} required/></label><label>Category<select name="category_id" defaultValue={text(course.category_id)}><option value="">Uncategorised</option>{categories.map(item=><option key={text(item.id)} value={text(item.id)}>{text(item.name)}</option>)}</select></label><label>Price (NGN)<input name="price" type="number" min="0" step="100" defaultValue={number(course.price_minor)/100} required/></label><label className="admin-course-check"><input name="is_featured" type="checkbox" defaultChecked={Boolean(course.is_featured)}/> Featured course</label><button className="outline-button" disabled={pending}>{pending?"Saving…":"Save details"}</button>{state.message?<small className={state.ok?"form-success":"form-error"} role="status">{state.message}</small>:null}</form>;
 }
 
 function CourseStatus({id,status,label}:{id:string;status:string;label:string}){return <form action={moderateCourse}><input type="hidden" name="id" value={id}/><input type="hidden" name="status" value={status}/><button className="outline-button">{label}</button></form>}

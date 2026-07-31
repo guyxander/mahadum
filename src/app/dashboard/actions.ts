@@ -295,22 +295,33 @@ export async function moderateCourse(data: FormData) {
   if (error) throw error;
   revalidatePath("/dashboard/admin/courses");
 }
-export async function adminUpdateCourse(data: FormData) {
-  const { client } = await context("admin");
-  const id = text(data, "id");
-  const title = text(data, "title");
-  const price = Number(text(data, "price"));
-  if (!id || !title) throw new Error("Course and title are required");
-  if (!Number.isFinite(price) || price < 0) throw new Error("Enter a valid course price");
-  const { error } = await client.from("courses").update({
-    title,
-    category_id: text(data, "category_id") || null,
-    price_minor: Math.round(price * 100),
-    is_featured: data.get("is_featured") === "on",
-  }).eq("id", id);
-  if (error) throw error;
-  revalidatePath("/dashboard/admin/courses");
-  revalidatePath("/courses");
+export type AdminCourseUpdateState = { ok: boolean; message: string };
+export async function adminUpdateCourse(
+  _previous: AdminCourseUpdateState,
+  data: FormData,
+): Promise<AdminCourseUpdateState> {
+  try {
+    const { client } = await context("admin");
+    const id = text(data, "id");
+    const title = text(data, "title");
+    const price = Number(text(data, "price"));
+    if (!id || !title) throw new Error("Course and title are required");
+    if (!Number.isFinite(price) || price < 0) throw new Error("Enter a valid course price");
+    const { data: updated, error } = await client.from("courses").update({
+      title,
+      category_id: text(data, "category_id") || null,
+      price_minor: Math.round(price * 100),
+      is_featured: data.get("is_featured") === "on",
+    }).eq("id", id).select("id,is_featured").maybeSingle();
+    if (error) throw error;
+    if (!updated) throw new Error("Course details were not updated");
+    revalidatePath("/dashboard/admin/courses");
+    revalidatePath("/courses");
+    revalidatePath("/");
+    return { ok: true, message: updated.is_featured ? "Saved. This course is now featured." : "Course details saved." };
+  } catch (error) {
+    return { ok: false, message: error instanceof Error ? error.message : "Course details could not be saved." };
+  }
 }
 export async function moderateCreator(data: FormData) {
   const { client } = await context("admin");

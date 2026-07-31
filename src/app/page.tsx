@@ -1,5 +1,7 @@
 import Link from "next/link";
+import Image from "next/image";
 import { PublicHeader } from "@/components/public-header";
+import { createClient } from "@/lib/supabase/server";
 
 const categories = [
   {
@@ -13,7 +15,7 @@ const categories = [
   { icon: "◎", name: "Media & Content", count: "154 courses", tone: "peach" },
 ];
 
-const courses = [
+const fallbackCourses = [
   {
     category: "Design",
     title: "Brand Identity Systems That Last",
@@ -23,6 +25,9 @@ const courses = [
     price: "₦18,500",
     color: "course-purple",
     initials: "AO",
+    href: "/courses",
+    thumbnail: "",
+    featured: false,
   },
   {
     category: "Business",
@@ -33,6 +38,9 @@ const courses = [
     price: "₦22,000",
     color: "course-orange",
     initials: "TA",
+    href: "/courses",
+    thumbnail: "",
+    featured: false,
   },
   {
     category: "Content",
@@ -43,6 +51,9 @@ const courses = [
     price: "₦15,000",
     color: "course-blue",
     initials: "ZM",
+    href: "/courses",
+    thumbnail: "",
+    featured: false,
   },
 ];
 
@@ -50,7 +61,33 @@ function ArrowIcon() {
   return <span aria-hidden="true">↗</span>;
 }
 
-export default function Home() {
+export default async function Home() {
+  const client = await createClient();
+  const result = client
+    ? await client.from("courses").select("id,title,slug,thumbnail_path,price_minor,currency,is_featured,categories(name),profiles!courses_creator_id_fkey(full_name)").eq("status", "published").order("is_featured", { ascending: false }).order("published_at", { ascending: false }).limit(3)
+    : { data: null };
+  const liveCourses = (result.data || []).map((course, index) => {
+    const profile = course.profiles as unknown as { full_name?: string } | null;
+    const category = course.categories as unknown as { name?: string } | null;
+    const creator = profile?.full_name || "Mahadum creator";
+    const thumbnail = course.thumbnail_path?.startsWith("public/") && client
+      ? client.storage.from("course-thumbnails").getPublicUrl(course.thumbnail_path).data.publicUrl
+      : "";
+    return {
+      category: category?.name || "Course",
+      title: course.title,
+      creator,
+      rating: "",
+      students: "",
+      price: new Intl.NumberFormat("en-NG", { style: "currency", currency: course.currency || "NGN", maximumFractionDigits: 0 }).format((course.price_minor || 0) / 100),
+      color: ["course-purple", "course-orange", "course-blue"][index % 3],
+      initials: creator.slice(0, 2).toUpperCase(),
+      href: `/courses/${course.slug}`,
+      thumbnail,
+      featured: Boolean(course.is_featured),
+    };
+  });
+  const courses = liveCourses.length ? liveCourses : fallbackCourses;
   return (
     <main>
       <PublicHeader />
@@ -175,19 +212,20 @@ export default function Home() {
         </div>
         <div className="course-grid">
           {courses.map((course) => (
-            <Link className="course-card" href="/courses" key={course.title}>
+            <Link className="course-card" href={course.href} key={course.title}>
               <div className={`course-cover ${course.color}`}>
+                {course.thumbnail ? <Image className="marketplace-thumbnail" src={course.thumbnail} alt={`${course.title} thumbnail`} width={640} height={360} unoptimized /> : null}
                 <span>{course.category}</span>
-                <div className="cover-shape">
+                {!course.thumbnail ? <div className="cover-shape">
                   <i />
                   <i />
                   <i />
-                </div>
+                </div> : null}
               </div>
               <div className="course-content">
-                <div className="rating">
+                {course.featured ? <span className="featured-course-label">Featured course</span> : <div className="rating">
                   ★ {course.rating} <span>({course.students} learners)</span>
-                </div>
+                </div>}
                 <h3>{course.title}</h3>
                 <div className="creator-row">
                   <span>{course.initials}</span>

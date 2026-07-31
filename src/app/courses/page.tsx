@@ -11,6 +11,7 @@ type Course = {
   short_description: string;
   price_minor: number;
   currency: string;
+  is_featured: boolean;
   thumbnail_path: string | null;
   categories: { name: string } | null;
   profiles: { full_name: string } | null;
@@ -41,9 +42,10 @@ export default async function CoursesPage({
     let query = client
       .from("courses")
       .select(
-        "id,title,slug,short_description,thumbnail_path,price_minor,currency,categories(name),profiles!courses_creator_id_fkey(full_name)",
+        "id,title,slug,short_description,thumbnail_path,price_minor,currency,is_featured,categories(name),profiles!courses_creator_id_fkey(full_name)",
       )
       .eq("status", "published")
+      .order("is_featured", { ascending: false })
       .order("published_at", { ascending: false });
     const selected = categories.find(
       (x) => x.name === filters.category || x.slug === filters.category,
@@ -118,6 +120,7 @@ export default async function CoursesPage({
                   </div> : null}
                 </div>
                 <div className="course-content">
+                  {course.is_featured ? <span className="featured-course-label">Featured course</span> : null}
                   <h3>{course.title}</h3>
                   <p>{course.short_description}</p>
                   <div className="creator-row">
