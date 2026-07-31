@@ -73,7 +73,7 @@ export function CourseBuilderWizard({ data, courseId, step }: { data: DashboardD
   const base = course ? `/dashboard/creator/course-builder?course=${string(course.id)}` : "/dashboard/creator/course-builder";
 
   return <div className="dashboard-page">
-    <div className="page-head"><div><h1>Course builder</h1><p>Complete all three steps before submitting your course.</p></div></div>
+    <div className="page-head"><div><h1>Course builder</h1><p>Complete all three steps, then publish your course immediately.</p></div></div>
     <Progress step={current} />
 
     {current === "details" ? <section className="panel wizard-panel"><span className="overline">Step 1 of 3</span><h3>{course ? "Course details" : "Create a new course"}</h3><p>Start with the information learners will see in the marketplace.</p><DetailsForm categories={data.categories} course={course} /></section> : null}
@@ -98,6 +98,6 @@ export function CourseBuilderWizard({ data, courseId, step }: { data: DashboardD
       <div className="wizard-actions sticky-wizard-actions"><Link className="outline-button" href={`${base}&step=details`}>Back</Link>{ready ? <Link className="button" href={`${base}&step=review`}>Next: Review course</Link> : <span className="wizard-hint">Save one YouTube lesson to continue.</span>}</div>
     </section> : null}
 
-    {course && current === "review" ? <section className="panel wizard-panel"><span className="overline">Step 3 of 3</span><h3>Review and submit</h3><div className="review-summary"><div><span>Course</span><strong>{string(course.title)}</strong></div><div><span>Modules</span><strong>{modules.length}</strong></div><div><span>Video lessons</span><strong>{videoLessons.length}</strong></div><div><span>Status</span><strong>{string(course.status)}</strong></div></div><p>Submitting sends this draft to Mahadum for review.</p><div className="wizard-actions"><Link className="outline-button" href={`${base}&step=modules`}>Back</Link>{ready && string(course.status) === "draft" ? <form action={submitCourse}><input type="hidden" name="id" value={string(course.id)} /><button className="button">Submit course for review</button></form> : <span className="wizard-hint">A valid YouTube lesson is required.</span>}</div></section> : null}
+    {course && current === "review" ? <section className="panel wizard-panel"><span className="overline">Step 3 of 3</span><h3>Review and publish</h3><div className="review-summary"><div><span>Course</span><strong>{string(course.title)}</strong></div><div><span>Modules</span><strong>{modules.length}</strong></div><div><span>Video lessons</span><strong>{videoLessons.length}</strong></div><div><span>Status</span><strong>{string(course.status)}</strong></div></div><p>Your course will appear in the marketplace immediately after publishing.</p><div className="wizard-actions"><Link className="outline-button" href={`${base}&step=modules`}>Back</Link>{ready && string(course.status) === "draft" ? <form action={submitCourse}><input type="hidden" name="id" value={string(course.id)} /><button className="button">Publish course</button></form> : <span className="wizard-hint">A valid YouTube lesson is required.</span>}</div></section> : null}
   </div>;
 }

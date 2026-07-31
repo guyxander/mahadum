@@ -10,7 +10,6 @@ import {
   deleteLesson,
   deleteModule,
   moderateAffiliate,
-  moderateCourse,
   moderateCreator,
   moderateFinance,
   saveCategory,
@@ -104,12 +103,12 @@ export function LegacyCourseBuilder({ data }: { data: DashboardData }) {
             return (
         <section className="panel course-editor" key={string(course.id)}>
           <div className="course-readiness">
-            <strong>{hasYouTubeLesson ? "Ready to submit" : "Next: add your first YouTube lesson"}</strong>
+            <strong>{hasYouTubeLesson ? "Ready to publish" : "Next: add your first YouTube lesson"}</strong>
             <span>{hasYouTubeLesson ? "Your draft has a playable lecture video." : "Paste a YouTube link below. Mahadum will embed it for learners."}</span>
             {string(course.status) === "draft" && hasYouTubeLesson ? (
               <form action={submitCourse}>
                 <input type="hidden" name="id" value={string(course.id)} />
-                <button className="button">Submit for review</button>
+                <button className="button">Publish course</button>
               </form>
             ) : null}
           </div>
@@ -348,7 +347,7 @@ function CreatorCourses({ data }: { data: DashboardData }) {
     <div className="dashboard-page">
       <PageHead
         title="Courses"
-        subtitle="Manage drafts and submit completed courses for review."
+        subtitle="Manage drafts and publish completed courses immediately."
         action="Create course"
         actionHref="/dashboard/creator/course-builder"
       />
@@ -966,20 +965,6 @@ function AdminSection({
                 </span>
                 <span className={`status ${status}`}>{status}</span>
                 <div className="row-actions">
-                  {section === "courses" && status === "in_review" && (
-                    <>
-                      <ModerateCourse
-                        id={string(row.id)}
-                        status="published"
-                        label="Publish"
-                      />
-                      <ModerateCourse
-                        id={string(row.id)}
-                        status="rejected"
-                        label="Reject"
-                      />
-                    </>
-                  )}
                   {section === "creators" && status === "pending" && (
                     <>
                       <ModerateCreator
@@ -1018,23 +1003,6 @@ function AdminSection({
   );
 }
 
-function ModerateCourse({
-  id,
-  status,
-  label,
-}: {
-  id: string;
-  status: string;
-  label: string;
-}) {
-  return (
-    <form action={moderateCourse}>
-      <input type="hidden" name="id" value={id} />
-      <input type="hidden" name="status" value={status} />
-      <button>{label}</button>
-    </form>
-  );
-}
 function ModerateCreator({
   id,
   status,

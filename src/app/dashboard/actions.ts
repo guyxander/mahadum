@@ -92,16 +92,18 @@ export async function submitCourse(data: FormData) {
   if (!(lessons || []).some((lesson) => youtubeVideoId(lesson.video_url))) throw new Error("Add at least one valid YouTube lesson before submitting your course.");
   const { data: submitted, error } = await client
     .from("courses")
-    .update({ status: "in_review" })
+    .update({ status: "published", published_at: new Date().toISOString(), rejection_reason: null })
     .eq("id", courseId)
     .eq("creator_id", user.id)
     .eq("status", "draft")
     .select("id")
     .maybeSingle();
   if (error) throw error;
-  if (!submitted) throw new Error("Only draft courses can be submitted.");
+  if (!submitted) throw new Error("Only draft courses can be published.");
   revalidatePath("/dashboard/creator/courses");
   revalidatePath("/dashboard/creator/course-builder");
+  revalidatePath("/courses");
+  revalidatePath("/");
 }
 export async function deleteCourse(data: FormData) {
   const { client, user } = await context("creator");
