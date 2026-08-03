@@ -3,9 +3,9 @@ import { createClient } from "@/lib/supabase/server";
 
 export default async function CreatorEntryPage() {
   const client = await createClient();
-  if (!client) redirect("/signup?role=creator");
+  if (!client) redirect("/signup?next=/dashboard/creator/overview");
   const { data: { user } } = await client.auth.getUser();
-  if (!user) redirect("/signup?role=creator");
+  if (!user) redirect("/signup?next=/dashboard/creator/overview");
   const { data: role } = await client.from("user_roles").select("role").eq("user_id", user.id).eq("role", "creator").maybeSingle();
-  redirect(role ? "/dashboard/creator/overview" : "/signup?role=creator");
+  redirect(role ? "/dashboard/creator/overview" : "/signup?next=/dashboard/creator/overview");
 }

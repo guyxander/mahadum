@@ -17,11 +17,7 @@ export async function PublicHeader({
       ? await client.from("user_roles").select("role").eq("user_id", user.id)
       : { data: null };
   const grants = new Set((assignedRoles || []).map((item) => item.role));
-  const role = grants.has("admin")
-    ? "admin"
-    : grants.has("creator")
-      ? "creator"
-      : "learner";
+  const role = grants.has("admin") ? "admin" : "learner";
   const dashboardHref = user
     ? `/dashboard/${role}/${role === "learner" ? "my-learning" : "overview"}`
     : undefined;

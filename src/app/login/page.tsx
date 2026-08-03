@@ -1,10 +1,8 @@
 import Link from "next/link";
-import { LoginForm } from "@/components/login-form";
 import { GoogleAuthButton } from "@/components/google-auth-button";
 
 export default async function LoginPage({ searchParams }: { searchParams: Promise<{ message?: string; next?: string }> }) {
   const { message, next: requestedNext } = await searchParams;
   const next = requestedNext?.startsWith("/") && !requestedNext.startsWith("//") ? requestedNext : undefined;
-  const signupHref = next ? `/signup?next=${encodeURIComponent(next)}` : "/signup";
-  return <main className="auth-page"><section className="auth-brand"><Link className="brand" href="/"><span className="brand-mark">M</span> Mahadum</Link><div><span className="overline light">Learning without limits</span><h1>Welcome back to your next chapter.</h1><p>Learn practical skills from creators who have done the work.</p></div><small>Creator-first. Learner-focused.</small></section><section className="auth-form"><div><h2>Log in</h2><p>Enter your details to continue.</p>{message&&<div className="auth-notice" role="status">{message}</div>}<GoogleAuthButton next={next}/><LoginForm next={next}/><p className="auth-switch">New to Mahadum? <Link href={signupHref}>Create an account</Link></p></div></section></main>;
+  return <main className="auth-page"><section className="auth-brand"><Link className="brand" href="/"><span className="brand-mark">M</span> Mahadum</Link><div><span className="overline light">One Mahadum account</span><h1>Learn what you need. Teach what you know.</h1><p>Your account includes both the learning space and Creator Hub.</p></div><small>Google-secured access.</small></section><section className="auth-form"><div><h2>Continue to Mahadum</h2><p>Sign in or create your account securely with Google.</p>{message&&<div className="auth-notice" role="status">{message}</div>}<GoogleAuthButton next={next}/><p className="auth-switch">By continuing, you agree to Mahadum’s <Link href="/legal/terms">Terms</Link> and <Link href="/legal/privacy">Privacy Policy</Link>.</p></div></section></main>;
 }

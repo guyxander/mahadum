@@ -18,10 +18,8 @@ export async function GET(request: Request) {
           const { data: { user } } = await client.auth.getUser();
           if (user) {
             const admin = createAdminClient();
-            if (url.searchParams.get("role") === "creator") {
-              await admin.from("user_roles").upsert({ user_id: user.id, role: "creator" }, { onConflict: "user_id,role" });
-              await admin.from("creator_profiles").upsert({ user_id: user.id, display_name: user.user_metadata.full_name || user.user_metadata.name || "New creator", headline: "Creator" }, { onConflict: "user_id", ignoreDuplicates: true });
-            }
+            await admin.from("user_roles").upsert({ user_id: user.id, role: "creator" }, { onConflict: "user_id,role" });
+            await admin.from("creator_profiles").upsert({ user_id: user.id, display_name: user.user_metadata.full_name || user.user_metadata.name || "New creator", headline: "Creator", verification_status: "verified", verified_at: new Date().toISOString() }, { onConflict: "user_id", ignoreDuplicates: true });
 
             const recentlyCreated = Date.now() - new Date(user.created_at).getTime() < 5 * 60 * 1000;
             if (referrer && recentlyCreated) {
