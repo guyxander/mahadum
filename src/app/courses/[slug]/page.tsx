@@ -17,8 +17,10 @@ function formatOverview(description: string) {
   return { introduction: introduction.trim(), outcomes };
 }
 
-export default async function CoursePage({ params }: { params: Promise<{ slug: string }> }) {
+export default async function CoursePage({ params,searchParams }: { params: Promise<{ slug: string }>;searchParams:Promise<{ref?:string}> }) {
   const { slug } = await params;
+  const query=await searchParams;
+  const affiliateCode=/^[a-z0-9-]{4,24}$/.test(query.ref||"")?query.ref:undefined;
   const client = await createClient();
   if (!client) notFound();
 
@@ -68,7 +70,7 @@ export default async function CoursePage({ params }: { params: Promise<{ slug: s
           {thumbnailUrl ? <img className="course-thumbnail" src={thumbnailUrl} alt={`${course.title} course thumbnail`} /> : <div className="course-preview-art" aria-label="Course video preview illustration"><span>AI</span><div><i /><i /><i /></div><b>▶</b></div>}
           <div className="checkout-body">
             <small>Complete course</small><strong className="course-price">{price}</strong>
-            {isCreator ? <Link className="button" href={`/dashboard/creator/course-builder?course=${course.id}&step=details`}>Manage this course</Link> : isEnrolled && firstLesson ? <Link className="button" href={`/learn/${course.id}/${firstLesson.id}`}>Continue learning</Link> : user ? <CheckoutButton courseId={course.id} /> : <Link className="button" href="/login">Log in to enroll</Link>}
+            {isCreator ? <Link className="button" href={`/dashboard/creator/course-builder?course=${course.id}&step=details`}>Manage this course</Link> : isEnrolled && firstLesson ? <Link className="button" href={`/learn/${course.id}/${firstLesson.id}`}>Continue learning</Link> : user ? <CheckoutButton courseId={course.id} affiliateCode={affiliateCode} /> : <Link className="button" href={`/login?next=${encodeURIComponent(`/courses/${slug}${affiliateCode?`?ref=${affiliateCode}`:""}`)}`}>Log in to enroll</Link>}
             <ul><li>Full lifetime access</li><li>{lessons.length} on-demand video {lessons.length === 1 ? "lesson" : "lessons"}</li><li>Certificate upon completion</li><li>Learn on mobile or desktop</li></ul>
           </div>
         </aside>

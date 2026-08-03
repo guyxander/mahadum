@@ -29,6 +29,7 @@ import { DeleteCourseButton } from "@/components/delete-course-button";
 import { BankAccountForm, PayoutRequestForm } from "@/components/wallet-forms";
 import { AdminUsers } from "@/components/admin-users";
 import { AdminCourses } from "@/components/admin-courses";
+import { AffiliateCourseLinks } from "@/components/affiliate-course-links";
 
 const string = (value: unknown) => (typeof value === "string" ? value : "");
 const number = (value: unknown) => (typeof value === "number" ? value : 0);
@@ -601,13 +602,15 @@ function Profile({ data }: { data: DashboardData }) {
 
 function AffiliatePanel({ data }: { data: DashboardData }) {
   const affiliate = data.affiliates[0];
+  const affiliateStatus = string(affiliate?.status);
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://mahadum.vercel.app";
   return (
     <div className="dashboard-page">
       <PageHead
         title="Affiliates"
         subtitle="Apply to promote Mahadum courses and track your status."
       />
-      {affiliate ? (
+      {affiliate ? (<>
         <section className="panel">
           <h3>Your affiliate account</h3>
           <p>
@@ -624,6 +627,8 @@ function AffiliatePanel({ data }: { data: DashboardData }) {
             Level-two commission: {number(affiliate.level_two_bps) / 100}%
           </p>
         </section>
+        {affiliateStatus === "approved" ? <AffiliateCourseLinks code={string(affiliate.code)} siteUrl={siteUrl} courses={data.marketplaceCourses.map(course=>({id:string(course.id),title:string(course.title),slug:string(course.slug),shortDescription:string(course.short_description),priceMinor:number(course.price_minor),currency:string(course.currency)||"NGN"}))}/> : <section className="panel"><h3>Affiliate links are awaiting approval</h3><p className="muted-copy">Your course links will appear automatically after an administrator approves this affiliate account.</p></section>}
+        </>
       ) : (
         <section className="panel">
           <h3>Affiliate application</h3>

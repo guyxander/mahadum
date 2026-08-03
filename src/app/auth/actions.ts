@@ -11,6 +11,8 @@ export async function signIn(_state:LoginState,formData: FormData):Promise<Login
   const {error}=await client.auth.signInWithPassword({email,password});
   if(error){console.warn("[auth/login] rejected",{code:error.code,status:error.status});return {error:error.message};}
   const {data:roles,error:roleError}=await client.from("user_roles").select("role");if(roleError)console.error("[auth/login] role lookup failed",{code:roleError.code});const granted=new Set((roles||[]).map(item=>item.role));
+  const requestedNext=String(formData.get("next")||"");const safeNext=requestedNext.startsWith("/")&&!requestedNext.startsWith("//")?requestedNext:"";
+  if(safeNext)redirect(safeNext);
   redirect(granted.has("admin")?"/dashboard/admin/overview":granted.has("creator")?"/dashboard/creator/overview":"/dashboard/learner/my-learning");
 }
 

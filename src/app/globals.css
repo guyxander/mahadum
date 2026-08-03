@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "./affiliate-links.css";
 
 :root { --purple:#6d28d9; --purple-dark:#2b1256; --ink:#171321; --muted:#6e6878; --line:#e9e5ef; --paper:#fbfafc; }
 * { box-sizing:border-box; }
