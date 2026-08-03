@@ -5,7 +5,6 @@ import {
   addFirstLesson,
   addModule,
   approveAllPendingPayouts,
-  applyAffiliate,
   deleteCourse,
   deleteLesson,
   deleteModule,
@@ -82,6 +81,8 @@ export function DashboardContent({
     return <Explore data={data} />;
   if (role === "learner" && section === "certificates")
     return <Certificates data={data} />;
+  if (role === "learner" && section === "affiliates")
+    return <AffiliatePanel data={data} />;
   if (section === "profile") return <Profile data={data} />;
   if (role === "admin") return <AdminSection section={section} data={data} />;
   return <Overview role={role} data={data} />;
@@ -608,7 +609,7 @@ function AffiliatePanel({ data }: { data: DashboardData }) {
     <div className="dashboard-page">
       <PageHead
         title="Affiliates"
-        subtitle="Apply to promote Mahadum courses and track your status."
+        subtitle="Share any published Mahadum course and earn from eligible referrals."
       />
       {affiliate ? (<>
         <section className="panel">
@@ -631,18 +632,8 @@ function AffiliatePanel({ data }: { data: DashboardData }) {
         </>
       ) : (
         <section className="panel">
-          <h3>Affiliate application</h3>
-          <form action={applyAffiliate} className="crud-form">
-            <label>
-              Preferred referral code
-              <input name="code" minLength={4} maxLength={24} required />
-            </label>
-            <label>
-              Referrer code (optional)
-              <input name="parent_code" />
-            </label>
-            <button className="button">Apply</button>
-          </form>
+          <h3>Preparing your affiliate links</h3>
+          <p className="muted-copy">Your affiliate account is created automatically. Refresh this page in a moment if your links have not appeared yet.</p>
         </section>
       )}
     </div>
