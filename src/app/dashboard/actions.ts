@@ -351,6 +351,26 @@ export async function moderateAffiliate(data: FormData) {
   if (error) throw error;
   revalidatePath("/dashboard/admin/affiliates");
 }
+export async function updateAffiliateCommissions(data: FormData) {
+  const { client } = await context("admin");
+  const levelOne = Number(text(data, "level_one_percent"));
+  const levelTwo = Number(text(data, "level_two_percent"));
+  if (!Number.isFinite(levelOne) || !Number.isFinite(levelTwo) || levelOne < 0 || levelTwo < 0 || levelOne > 30 || levelTwo > 30)
+    throw new Error("Commission percentages must be between 0% and 30%");
+  if (levelOne + levelTwo > 30)
+    throw new Error("Combined affiliate commission cannot exceed 30%");
+  const { data: updated, error } = await client
+    .from("affiliates")
+    .update({ level_one_bps: Math.round(levelOne * 100), level_two_bps: Math.round(levelTwo * 100) })
+    .eq("user_id", text(data, "id"))
+    .select("user_id")
+    .maybeSingle();
+  if (error) throw error;
+  if (!updated) throw new Error("Affiliate account was not found");
+  revalidatePath("/dashboard/admin/affiliates");
+  revalidatePath("/dashboard/creator/affiliates");
+  revalidatePath("/dashboard/learner/affiliates");
+}
 export async function applyAffiliate(data: FormData) {
   const { client, user } = await context();
   const code = slugify(text(data, "code")).slice(0, 24);

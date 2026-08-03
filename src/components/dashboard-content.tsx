@@ -18,6 +18,7 @@ import {
   submitCourse,
   updateLesson,
   updateModule,
+  updateAffiliateCommissions,
   updateProfile,
 } from "@/app/dashboard/actions";
 import { CheckoutButton } from "@/components/checkout-button";
@@ -988,6 +989,14 @@ function AdminSection({
                         label="Reject"
                       />
                     </>
+                  )}
+                  {section === "affiliates" && (
+                    <form action={updateAffiliateCommissions} className="affiliate-rate-form">
+                      <input type="hidden" name="id" value={string(row.user_id)} />
+                      <label>Level one (%)<input name="level_one_percent" type="number" min="0" max="30" step="0.01" defaultValue={number(row.level_one_bps) / 100} required /></label>
+                      <label>Level two (%)<input name="level_two_percent" type="number" min="0" max="30" step="0.01" defaultValue={number(row.level_two_bps) / 100} required /></label>
+                      <button className="outline-button" type="submit">Save commissions</button>
+                    </form>
                   )}
                 </div>
               </div>

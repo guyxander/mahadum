@@ -1,0 +1,2 @@
+.affiliate-rate-form{display:flex;align-items:end;gap:8px;flex-wrap:wrap}.affiliate-rate-form label{display:grid;gap:4px;color:var(--muted);font-size:10px;font-weight:750}.affiliate-rate-form input{width:92px;min-height:38px;padding:8px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink)}
+@media(max-width:700px){.affiliate-rate-form{display:grid;grid-template-columns:1fr 1fr;width:100%}.affiliate-rate-form input{width:100%}.affiliate-rate-form button{grid-column:1/-1;width:100%}}
