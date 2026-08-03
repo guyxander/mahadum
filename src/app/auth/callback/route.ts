@@ -7,6 +7,7 @@ export async function GET(request: Request) {
   const code = url.searchParams.get("code");
   const requested = url.searchParams.get("next") || "/";
   const next = requested.startsWith("/") && !requested.startsWith("//") ? requested : "/";
+  let destination = next;
   const referrer = /^[a-z0-9-]{4,24}$/.test(url.searchParams.get("ref") || "") ? url.searchParams.get("ref")! : "";
 
   if (code) {
@@ -18,6 +19,8 @@ export async function GET(request: Request) {
           const { data: { user } } = await client.auth.getUser();
           if (user) {
             const admin = createAdminClient();
+            const { data: accountRoles } = await admin.from("user_roles").select("role").eq("user_id", user.id);
+            if (next === "/dashboard/learner/my-learning" && (accountRoles || []).some((item) => item.role === "admin")) destination = "/dashboard/admin/overview";
             await admin.from("user_roles").upsert({ user_id: user.id, role: "creator" }, { onConflict: "user_id,role" });
             await admin.from("creator_profiles").upsert({ user_id: user.id, display_name: user.user_metadata.full_name || user.user_metadata.name || "New creator", headline: "Creator", verification_status: "verified", verified_at: new Date().toISOString() }, { onConflict: "user_id", ignoreDuplicates: true });
 
@@ -32,7 +35,7 @@ export async function GET(request: Request) {
         } catch (setupError) {
           console.error("[auth/callback] account setup failed", { message: setupError instanceof Error ? setupError.message : "unknown" });
         }
-        return NextResponse.redirect(new URL(next, url.origin));
+        return NextResponse.redirect(new URL(destination, url.origin));
       }
       console.error("[auth/callback] code exchange failed", { code: error.code, status: error.status });
     }
