@@ -29,6 +29,7 @@ import { DeleteCourseButton } from "@/components/delete-course-button";
 import { BankAccountForm, PayoutRequestForm } from "@/components/wallet-forms";
 import { AdminUsers } from "@/components/admin-users";
 import { AdminCourses } from "@/components/admin-courses";
+import { AdminAffiliates } from "@/components/admin-affiliates";
 import { AffiliateCourseLinks } from "@/components/affiliate-course-links";
 
 const string = (value: unknown) => (typeof value === "string" ? value : "");
@@ -613,21 +614,10 @@ function AffiliatePanel({ data }: { data: DashboardData }) {
         subtitle="Share any published Mahadum course and earn from eligible referrals."
       />
       {affiliate ? (<>
-        <section className="panel">
+        <section className="panel affiliate-account-card">
           <h3>Your affiliate account</h3>
-          <p>
-            <b>Code:</b> {string(affiliate.code)}
-          </p>
-          <p>
-            <b>Status:</b>{" "}
-            <span className={`status ${string(affiliate.status)}`}>
-              {string(affiliate.status)}
-            </span>
-          </p>
-          <p>
-            Level-one commission: {number(affiliate.level_one_bps) / 100}% ·
-            Level-two commission: {number(affiliate.level_two_bps) / 100}%
-          </p>
+          <div className="affiliate-account-summary"><div><span>Referral code</span><strong>{string(affiliate.code)}</strong></div><div><span>Account status</span><strong><span className={`status ${string(affiliate.status)}`}>{string(affiliate.status)}</span></strong></div></div>
+          <div className="affiliate-member-rates"><div><span>Level one</span><strong>{number(affiliate.level_one_bps) / 100}%</strong><small>Direct course referrals</small></div><div><span>Level two</span><strong>{number(affiliate.level_two_bps) / 100}%</strong><small>Affiliate network referrals</small></div></div>
         </section>
         {affiliateStatus === "approved" ? <AffiliateCourseLinks code={string(affiliate.code)} siteUrl={siteUrl} courses={data.marketplaceCourses.map(course=>({id:string(course.id),title:string(course.title),slug:string(course.slug),shortDescription:string(course.short_description),priceMinor:number(course.price_minor),currency:string(course.currency)||"NGN"}))}/> : <section className="panel"><h3>Affiliate links are awaiting approval</h3><p className="muted-copy">Your course links will appear automatically after an administrator approves this affiliate account.</p></section>}
         </>
@@ -910,6 +900,7 @@ function AdminSection({
   if (section === "finance") return <FinanceAdmin data={data} />;
   if (section === "users") return <AdminUsers users={data.users} currentUserId={data.userId}/>;
   if (section === "courses") return <AdminCourses courses={data.courses} categories={data.categories}/>;
+  if (section === "affiliates") return <AdminAffiliates affiliates={data.affiliates}/>;
   if (section === "settings") return <AdminSettings data={data} />;
   if (section === "overview" || section === "analytics")
     return <Overview role="admin" data={data} />;
