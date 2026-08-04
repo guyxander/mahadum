@@ -1,0 +1,60 @@
+.whatsapp-creator-button {
+  width: max-content;
+  max-width: 100%;
+  margin-top: 18px;
+  padding: 11px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-radius: 11px;
+  background: #eaf8ef;
+  color: #176b3a;
+  text-decoration: none;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+.whatsapp-creator-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 20px #176b3a18;
+}
+.whatsapp-creator-button svg {
+  width: 25px;
+  height: 25px;
+  flex: 0 0 auto;
+  color: #25d366;
+}
+.whatsapp-creator-button > span {
+  display: grid;
+  gap: 2px;
+}
+.whatsapp-creator-button strong {
+  font-size: 12px;
+}
+.whatsapp-creator-button small {
+  color: #4d775f;
+  font-size: 9px;
+}
+.whatsapp-creator-button > b {
+  margin-left: 8px;
+  font-size: 15px;
+}
+.creator-contact-unavailable {
+  margin-top: 15px !important;
+  color: var(--muted) !important;
+  font-size: 11px !important;
+}
+.crud-form label > small {
+  color: var(--muted);
+  font-size: 9px;
+  line-height: 1.5;
+}
+@media (max-width: 600px) {
+  .whatsapp-creator-button {
+    width: 100%;
+    justify-content: flex-start;
+  }
+  .whatsapp-creator-button > b {
+    margin-left: auto;
+  }
+}

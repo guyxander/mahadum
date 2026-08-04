@@ -66,7 +66,13 @@ export function DashboardContent({
   wizardStep?: string;
 }) {
   if (role === "creator" && section === "course-builder")
-    return <CourseBuilderWizard data={data} courseId={builderCourseId} step={wizardStep} />;
+    return (
+      <CourseBuilderWizard
+        data={data}
+        courseId={builderCourseId}
+        step={wizardStep}
+      />
+    );
   if (role === "creator" && section === "courses")
     return <CreatorCourses data={data} />;
   if (role === "creator" && section === "affiliates")
@@ -102,149 +108,219 @@ export function LegacyCourseBuilder({ data }: { data: DashboardData }) {
         <CourseForm categories={data.categories} />
       </section>
       {data.courses.map((course) => {
-            const modules = list(course.course_modules);
-            const hasYouTubeLesson = modules.some((module) => list(module.lessons).some((lesson) => Boolean(youtubeVideoId(string(lesson.video_url)))));
-            return (
-        <section className="panel course-editor" key={string(course.id)}>
-          <div className="course-readiness">
-            <strong>{hasYouTubeLesson ? "Ready to publish" : "Next: add your first YouTube lesson"}</strong>
-            <span>{hasYouTubeLesson ? "Your draft has a playable lecture video." : "Paste a YouTube link below. Mahadum will embed it for learners."}</span>
-            {string(course.status) === "draft" && hasYouTubeLesson ? (
-              <form action={submitCourse}>
-                <input type="hidden" name="id" value={string(course.id)} />
-                <button className="button">Publish course</button>
-              </form>
-            ) : null}
-          </div>
-          <div className="panel-head">
-            <div>
-              <span className={`status ${string(course.status)}`}>
-                {string(course.status)}
+        const modules = list(course.course_modules);
+        const hasYouTubeLesson = modules.some((module) =>
+          list(module.lessons).some((lesson) =>
+            Boolean(youtubeVideoId(string(lesson.video_url))),
+          ),
+        );
+        return (
+          <section className="panel course-editor" key={string(course.id)}>
+            <div className="course-readiness">
+              <strong>
+                {hasYouTubeLesson
+                  ? "Ready to publish"
+                  : "Next: add your first YouTube lesson"}
+              </strong>
+              <span>
+                {hasYouTubeLesson
+                  ? "Your draft has a playable lecture video."
+                  : "Paste a YouTube link below. Mahadum will embed it for learners."}
               </span>
-              <h3>{string(course.title)}</h3>
-            </div>
-          </div>
-          <AssetUploader userId={data.userId} courseId={string(course.id)} />
-          <details>
-            <summary>Edit course details</summary>
-            <CourseForm categories={data.categories} course={course} />
-          </details>
-          {list(course.course_modules).length === 0 ? (
-            <form action={addFirstLesson} className="first-lesson-form">
-              <input type="hidden" name="course_id" value={string(course.id)} />
-              <div><span className="overline">Step 2 of 2</span><h3>Add your first YouTube lesson</h3><p>Use an Unlisted YouTube video. Learners watch it inside Mahadum without seeing a direct video link.</p></div>
-              <label>Lesson title<input name="title" required placeholder="Introduction" /></label>
-              <label>YouTube video link<input name="video_url" type="url" required inputMode="url" placeholder="https://youtu.be/..." /></label>
-              <label>Duration (minutes)<input name="duration_minutes" type="number" min="0" placeholder="10" /></label>
-              <label className="first-lesson-description">Lesson description<textarea name="description" placeholder="What learners will cover in this lesson" /></label>
-              <button className="button">Save YouTube lesson</button>
-            </form>
-          ) : null}
-          <form action={addModule} className="inline-form">
-            <input type="hidden" name="course_id" value={string(course.id)} />
-            <input name="title" required placeholder="New module title" />
-            <button className="outline-button">Add module</button>
-          </form>
-          {list(course.course_modules)
-            .sort((a, b) => number(a.position) - number(b.position))
-            .map((module) => (
-              <div className="module-editor" key={string(module.id)}>
-                <form action={updateModule} className="inline-form">
-                  <input type="hidden" name="id" value={string(module.id)} />
-                  <input
-                    name="title"
-                    defaultValue={string(module.title)}
-                    required
-                  />
-                  <button className="outline-button">Rename</button>
+              {string(course.status) === "draft" && hasYouTubeLesson ? (
+                <form action={submitCourse}>
+                  <input type="hidden" name="id" value={string(course.id)} />
+                  <button className="button">Publish course</button>
                 </form>
-                {list(module.lessons)
-                  .sort((a, b) => number(a.position) - number(b.position))
-                  .map((lesson) => (
-                    <details className="lesson-row" key={string(lesson.id)}>
-                      <summary>
-                        {number(lesson.position) + 1}. {string(lesson.title)} ·{" "}
-                        {Math.ceil(number(lesson.duration_seconds) / 60)} min
-                      </summary>
-                      <form action={updateLesson} className="crud-form compact">
-                        <input
-                          type="hidden"
-                          name="id"
-                          value={string(lesson.id)}
-                        />
-                        <input
-                          name="title"
-                          defaultValue={string(lesson.title)}
-                          required
-                        />
-                        <label>YouTube video link<input name="video_url" type="url" defaultValue={string(lesson.video_url)} placeholder="https://youtu.be/..." /></label>
-                        <input
-                          name="duration_minutes"
-                          type="number"
-                          min="0"
-                          defaultValue={Math.ceil(
-                            number(lesson.duration_seconds) / 60,
-                          )}
-                        />
-                        <textarea
-                          name="description"
-                          defaultValue={string(lesson.description)}
-                        />
-                        <label className="check">
-                          <input
-                            name="is_free_preview"
-                            type="checkbox"
-                            defaultChecked={Boolean(lesson.is_free_preview)}
-                          />{" "}
-                          Free preview
-                        </label>
-                        <button className="outline-button">
-                          Update lesson
-                        </button>
-                      </form>
-                      <form action={deleteLesson}>
-                        <input
-                          type="hidden"
-                          name="id"
-                          value={string(lesson.id)}
-                        />
-                        <button className="danger-button">Delete lesson</button>
-                      </form>
-                    </details>
-                  ))}
-                <form action={addLesson} className="crud-form compact">
+              ) : null}
+            </div>
+            <div className="panel-head">
+              <div>
+                <span className={`status ${string(course.status)}`}>
+                  {string(course.status)}
+                </span>
+                <h3>{string(course.title)}</h3>
+              </div>
+            </div>
+            <AssetUploader userId={data.userId} courseId={string(course.id)} />
+            <details>
+              <summary>Edit course details</summary>
+              <CourseForm categories={data.categories} course={course} />
+            </details>
+            {list(course.course_modules).length === 0 ? (
+              <form action={addFirstLesson} className="first-lesson-form">
+                <input
+                  type="hidden"
+                  name="course_id"
+                  value={string(course.id)}
+                />
+                <div>
+                  <span className="overline">Step 2 of 2</span>
+                  <h3>Add your first YouTube lesson</h3>
+                  <p>
+                    Use an Unlisted YouTube video. Learners watch it inside
+                    Mahadum without seeing a direct video link.
+                  </p>
+                </div>
+                <label>
+                  Lesson title
+                  <input name="title" required placeholder="Introduction" />
+                </label>
+                <label>
+                  YouTube video link
                   <input
-                    type="hidden"
-                    name="module_id"
-                    value={string(module.id)}
+                    name="video_url"
+                    type="url"
+                    required
+                    inputMode="url"
+                    placeholder="https://youtu.be/..."
                   />
-                  <input name="title" required placeholder="Lesson title" />
-                  <label>YouTube video link<input name="video_url" type="url" placeholder="https://youtu.be/..." /></label>
+                </label>
+                <label>
+                  Duration (minutes)
                   <input
                     name="duration_minutes"
                     type="number"
                     min="0"
-                    placeholder="Minutes"
+                    placeholder="10"
                   />
+                </label>
+                <label className="first-lesson-description">
+                  Lesson description
                   <textarea
                     name="description"
-                    placeholder="Lesson description"
+                    placeholder="What learners will cover in this lesson"
                   />
-                  <label className="check">
-                    <input name="is_free_preview" type="checkbox" /> Free
-                    preview
-                  </label>
-                  <button className="outline-button">Add lesson</button>
-                </form>
-                <form action={deleteModule}>
-                  <input type="hidden" name="id" value={string(module.id)} />
-                  <button className="danger-button">Delete module</button>
-                </form>
-              </div>
-            ))}
-        </section>
-            );
-          })}
+                </label>
+                <button className="button">Save YouTube lesson</button>
+              </form>
+            ) : null}
+            <form action={addModule} className="inline-form">
+              <input type="hidden" name="course_id" value={string(course.id)} />
+              <input name="title" required placeholder="New module title" />
+              <button className="outline-button">Add module</button>
+            </form>
+            {list(course.course_modules)
+              .sort((a, b) => number(a.position) - number(b.position))
+              .map((module) => (
+                <div className="module-editor" key={string(module.id)}>
+                  <form action={updateModule} className="inline-form">
+                    <input type="hidden" name="id" value={string(module.id)} />
+                    <input
+                      name="title"
+                      defaultValue={string(module.title)}
+                      required
+                    />
+                    <button className="outline-button">Rename</button>
+                  </form>
+                  {list(module.lessons)
+                    .sort((a, b) => number(a.position) - number(b.position))
+                    .map((lesson) => (
+                      <details className="lesson-row" key={string(lesson.id)}>
+                        <summary>
+                          {number(lesson.position) + 1}. {string(lesson.title)}{" "}
+                          · {Math.ceil(number(lesson.duration_seconds) / 60)}{" "}
+                          min
+                        </summary>
+                        <form
+                          action={updateLesson}
+                          className="crud-form compact"
+                        >
+                          <input
+                            type="hidden"
+                            name="id"
+                            value={string(lesson.id)}
+                          />
+                          <input
+                            name="title"
+                            defaultValue={string(lesson.title)}
+                            required
+                          />
+                          <label>
+                            YouTube video link
+                            <input
+                              name="video_url"
+                              type="url"
+                              defaultValue={string(lesson.video_url)}
+                              placeholder="https://youtu.be/..."
+                            />
+                          </label>
+                          <input
+                            name="duration_minutes"
+                            type="number"
+                            min="0"
+                            defaultValue={Math.ceil(
+                              number(lesson.duration_seconds) / 60,
+                            )}
+                          />
+                          <textarea
+                            name="description"
+                            defaultValue={string(lesson.description)}
+                          />
+                          <label className="check">
+                            <input
+                              name="is_free_preview"
+                              type="checkbox"
+                              defaultChecked={Boolean(lesson.is_free_preview)}
+                            />{" "}
+                            Free preview
+                          </label>
+                          <button className="outline-button">
+                            Update lesson
+                          </button>
+                        </form>
+                        <form action={deleteLesson}>
+                          <input
+                            type="hidden"
+                            name="id"
+                            value={string(lesson.id)}
+                          />
+                          <button className="danger-button">
+                            Delete lesson
+                          </button>
+                        </form>
+                      </details>
+                    ))}
+                  <form action={addLesson} className="crud-form compact">
+                    <input
+                      type="hidden"
+                      name="module_id"
+                      value={string(module.id)}
+                    />
+                    <input name="title" required placeholder="Lesson title" />
+                    <label>
+                      YouTube video link
+                      <input
+                        name="video_url"
+                        type="url"
+                        placeholder="https://youtu.be/..."
+                      />
+                    </label>
+                    <input
+                      name="duration_minutes"
+                      type="number"
+                      min="0"
+                      placeholder="Minutes"
+                    />
+                    <textarea
+                      name="description"
+                      placeholder="Lesson description"
+                    />
+                    <label className="check">
+                      <input name="is_free_preview" type="checkbox" /> Free
+                      preview
+                    </label>
+                    <button className="outline-button">Add lesson</button>
+                  </form>
+                  <form action={deleteModule}>
+                    <input type="hidden" name="id" value={string(module.id)} />
+                    <button className="danger-button">Delete module</button>
+                  </form>
+                </div>
+              ))}
+          </section>
+        );
+      })}
     </div>
   );
 }
@@ -331,11 +407,19 @@ function CourseForm({
           </label>
           <label>
             Duration (minutes)
-            <input name="duration_minutes" type="number" min="0" placeholder="10" />
+            <input
+              name="duration_minutes"
+              type="number"
+              min="0"
+              placeholder="10"
+            />
           </label>
           <label>
             Lesson description
-            <textarea name="lesson_description" placeholder="What learners will cover" />
+            <textarea
+              name="lesson_description"
+              placeholder="What learners will cover"
+            />
           </label>
         </fieldset>
       ) : null}
@@ -381,10 +465,20 @@ function CreatorCourses({ data }: { data: DashboardData }) {
                 {string(course.status)}
               </span>
               <div className="row-actions">
-                <Link className="manage-course-link" href={`/dashboard/creator/course-builder?course=${string(course.id)}&step=details`}>Manage course</Link>
-                {(course.status === "draft" || course.status === "rejected") && (
+                <Link
+                  className="manage-course-link"
+                  href={`/dashboard/creator/course-builder?course=${string(course.id)}&step=details`}
+                >
+                  Manage course
+                </Link>
+                {(course.status === "draft" ||
+                  course.status === "rejected") && (
                   <>
-                    <DeleteCourseButton courseId={string(course.id)} courseTitle={string(course.title)} action={deleteCourse} />
+                    <DeleteCourseButton
+                      courseId={string(course.id)}
+                      courseTitle={string(course.title)}
+                      action={deleteCourse}
+                    />
                   </>
                 )}
               </div>
@@ -596,6 +690,21 @@ function Profile({ data }: { data: DashboardData }) {
               maxLength={2}
             />
           </label>
+          <label>
+            WhatsApp number
+            <input
+              name="whatsapp_number"
+              type="tel"
+              inputMode="tel"
+              defaultValue={string(data.creatorContact?.whatsapp_number)}
+              placeholder="+2348012345678"
+              aria-describedby="whatsapp-help"
+            />
+            <small id="whatsapp-help">
+              Include your country code. Learners will use this to ask questions
+              about your courses.
+            </small>
+          </label>
           <button className="button">Save profile</button>
         </form>
       </section>
@@ -606,25 +715,75 @@ function Profile({ data }: { data: DashboardData }) {
 function AffiliatePanel({ data }: { data: DashboardData }) {
   const affiliate = data.affiliates[0];
   const affiliateStatus = string(affiliate?.status);
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://mahadum.vercel.app";
+  const siteUrl =
+    process.env.NEXT_PUBLIC_SITE_URL || "https://mahadum.vercel.app";
   return (
     <div className="dashboard-page">
       <PageHead
         title="Affiliates"
         subtitle="Share any published Mahadum course and earn from eligible referrals."
       />
-      {affiliate ? (<>
-        <section className="panel affiliate-account-card">
-          <h3>Your affiliate account</h3>
-          <div className="affiliate-account-summary"><div><span>Referral code</span><strong>{string(affiliate.code)}</strong></div><div><span>Account status</span><strong><span className={`status ${string(affiliate.status)}`}>{string(affiliate.status)}</span></strong></div></div>
-          <div className="affiliate-member-rates"><div><span>Level one</span><strong>{number(affiliate.level_one_bps) / 100}%</strong><small>Direct course referrals</small></div><div><span>Level two</span><strong>{number(affiliate.level_two_bps) / 100}%</strong><small>Affiliate network referrals</small></div></div>
-        </section>
-        {affiliateStatus === "approved" ? <AffiliateCourseLinks code={string(affiliate.code)} siteUrl={siteUrl} courses={data.marketplaceCourses.map(course=>({id:string(course.id),title:string(course.title),slug:string(course.slug),shortDescription:string(course.short_description),priceMinor:number(course.price_minor),currency:string(course.currency)||"NGN"}))}/> : <section className="panel"><h3>Affiliate links are awaiting approval</h3><p className="muted-copy">Your course links will appear automatically after an administrator approves this affiliate account.</p></section>}
+      {affiliate ? (
+        <>
+          <section className="panel affiliate-account-card">
+            <h3>Your affiliate account</h3>
+            <div className="affiliate-account-summary">
+              <div>
+                <span>Referral code</span>
+                <strong>{string(affiliate.code)}</strong>
+              </div>
+              <div>
+                <span>Account status</span>
+                <strong>
+                  <span className={`status ${string(affiliate.status)}`}>
+                    {string(affiliate.status)}
+                  </span>
+                </strong>
+              </div>
+            </div>
+            <div className="affiliate-member-rates">
+              <div>
+                <span>Level one</span>
+                <strong>{number(affiliate.level_one_bps) / 100}%</strong>
+                <small>Direct course referrals</small>
+              </div>
+              <div>
+                <span>Level two</span>
+                <strong>{number(affiliate.level_two_bps) / 100}%</strong>
+                <small>Affiliate network referrals</small>
+              </div>
+            </div>
+          </section>
+          {affiliateStatus === "approved" ? (
+            <AffiliateCourseLinks
+              code={string(affiliate.code)}
+              siteUrl={siteUrl}
+              courses={data.marketplaceCourses.map((course) => ({
+                id: string(course.id),
+                title: string(course.title),
+                slug: string(course.slug),
+                shortDescription: string(course.short_description),
+                priceMinor: number(course.price_minor),
+                currency: string(course.currency) || "NGN",
+              }))}
+            />
+          ) : (
+            <section className="panel">
+              <h3>Affiliate links are awaiting approval</h3>
+              <p className="muted-copy">
+                Your course links will appear automatically after an
+                administrator approves this affiliate account.
+              </p>
+            </section>
+          )}
         </>
       ) : (
         <section className="panel">
           <h3>Preparing your affiliate links</h3>
-          <p className="muted-copy">Your affiliate account is created automatically. Refresh this page in a moment if your links have not appeared yet.</p>
+          <p className="muted-copy">
+            Your affiliate account is created automatically. Refresh this page
+            in a moment if your links have not appeared yet.
+          </p>
         </section>
       )}
     </div>
@@ -699,34 +858,194 @@ function PayoutPanel({ data }: { data: DashboardData }) {
 }
 
 function WalletPanel({ data }: { data: DashboardData }) {
-  const creator = data.ledger.filter(x => string(x.entry_type) === "creator_earning").reduce((s,x)=>s+number(x.amount_minor),0);
-  const affiliateAmount = data.ledger.filter(x => string(x.entry_type) === "affiliate_commission").reduce((s,x)=>s+number(x.amount_minor),0);
-  const total = data.ledger.reduce((s,x)=>s+number(x.amount_minor),0);
+  const creator = data.ledger
+    .filter((x) => string(x.entry_type) === "creator_earning")
+    .reduce((s, x) => s + number(x.amount_minor), 0);
+  const affiliateAmount = data.ledger
+    .filter((x) => string(x.entry_type) === "affiliate_commission")
+    .reduce((s, x) => s + number(x.amount_minor), 0);
+  const total = data.ledger.reduce((s, x) => s + number(x.amount_minor), 0);
   const pending = 0;
-  const reserved = data.payouts.filter(x => ["pending","approved","processing","paid"].includes(string(x.status))).reduce((s,x)=>s+number(x.amount_minor),0);
-  const available = Math.max(0,total-pending-reserved);
-  const paid = data.payouts.filter(x=>string(x.status)==="paid").reduce((s,x)=>s+number(x.amount_minor),0);
+  const reserved = data.payouts
+    .filter((x) =>
+      ["pending", "approved", "processing", "paid"].includes(string(x.status)),
+    )
+    .reduce((s, x) => s + number(x.amount_minor), 0);
+  const available = Math.max(0, total - pending - reserved);
+  const paid = data.payouts
+    .filter((x) => string(x.status) === "paid")
+    .reduce((s, x) => s + number(x.amount_minor), 0);
   const affiliate = data.affiliates[0];
-  return <div className="dashboard-page wallet-page">
-    <PageHead title="Wallet" subtitle="Your creator earnings, affiliate commissions, and payouts in one place." />
-    <section className="wallet-hero"><div><span>Available balance</span><strong>{money(available)}</strong><small>Settled funds ready for withdrawal</small></div><div><span>Next payout window</span><b>Friday</b><small>Minimum withdrawal: ₦10,000</small></div></section>
-    <div className="metric-grid wallet-metrics">
-      <article className="metric-card"><span>Pending settlement</span><strong>{money(pending)}</strong><small>Earnings are available immediately</small></article>
-      <article className="metric-card"><span>Creator earnings</span><strong>{money(creator)}</strong><small>70% share from course sales</small></article>
-      <article className="metric-card"><span>Affiliate earnings</span><strong>{money(affiliateAmount)}</strong><small>{affiliate?`${number(affiliate.level_one_bps)/100}% direct · ${number(affiliate.level_two_bps)/100}% level two`:"Activate affiliates to earn"}</small></article>
-      <article className="metric-card"><span>Total paid out</span><strong>{money(paid)}</strong><small>Completed withdrawals</small></article>
+  return (
+    <div className="dashboard-page wallet-page">
+      <PageHead
+        title="Wallet"
+        subtitle="Your creator earnings, affiliate commissions, and payouts in one place."
+      />
+      <section className="wallet-hero">
+        <div>
+          <span>Available balance</span>
+          <strong>{money(available)}</strong>
+          <small>Settled funds ready for withdrawal</small>
+        </div>
+        <div>
+          <span>Next payout window</span>
+          <b>Friday</b>
+          <small>Minimum withdrawal: ₦10,000</small>
+        </div>
+      </section>
+      <div className="metric-grid wallet-metrics">
+        <article className="metric-card">
+          <span>Pending settlement</span>
+          <strong>{money(pending)}</strong>
+          <small>Earnings are available immediately</small>
+        </article>
+        <article className="metric-card">
+          <span>Creator earnings</span>
+          <strong>{money(creator)}</strong>
+          <small>70% share from course sales</small>
+        </article>
+        <article className="metric-card">
+          <span>Affiliate earnings</span>
+          <strong>{money(affiliateAmount)}</strong>
+          <small>
+            {affiliate
+              ? `${number(affiliate.level_one_bps) / 100}% direct · ${number(affiliate.level_two_bps) / 100}% level two`
+              : "Activate affiliates to earn"}
+          </small>
+        </article>
+        <article className="metric-card">
+          <span>Total paid out</span>
+          <strong>{money(paid)}</strong>
+          <small>Completed withdrawals</small>
+        </article>
+      </div>
+      <div className="wallet-grid">
+        <section className="panel">
+          <div className="panel-head">
+            <div>
+              <h3>Wallet activity</h3>
+              <p>Every earning is recorded in your secure ledger.</p>
+            </div>
+          </div>
+          {data.ledger.length === 0 ? (
+            <Empty text="Your earnings will appear here after a verified course sale or affiliate conversion." />
+          ) : (
+            <div className="wallet-list">
+              {data.ledger.map((row) => {
+                const payment = object(row.payments);
+                const course = object(payment.courses);
+                const isAffiliate =
+                  string(row.entry_type) === "affiliate_commission";
+                return (
+                  <div className="wallet-row" key={string(row.id)}>
+                    <span
+                      className={
+                        isAffiliate ? "affiliate-credit" : "creator-credit"
+                      }
+                    >
+                      {isAffiliate ? "A" : "C"}
+                    </span>
+                    <div>
+                      <b>
+                        {isAffiliate
+                          ? "Affiliate commission"
+                          : "Course sale earning"}
+                      </b>
+                      <small>
+                        {string(course.title) ||
+                          string(payment.tx_ref) ||
+                          "Mahadum transaction"}{" "}
+                        · {date(row.created_at)}
+                      </small>
+                    </div>
+                    <strong>
+                      +
+                      {money(
+                        number(row.amount_minor),
+                        string(row.currency) || "NGN",
+                      )}
+                    </strong>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </section>
+        <aside className="wallet-side">
+          <section className="panel">
+            <h3>Withdraw funds</h3>
+            {data.payoutAccount ? (
+              <>
+                <p>
+                  Verified account: {string(data.payoutAccount.account_name)}{" "}
+                  ····{string(data.payoutAccount.account_number_last4)}
+                </p>
+                <PayoutRequestForm available={available} />
+                <details className="wallet-change-account">
+                  <summary>Change payout account</summary>
+                  <BankAccountForm banks={data.payoutBanks} />
+                </details>
+              </>
+            ) : (
+              <>
+                <p>
+                  Connect and verify the Nigerian bank account that should
+                  receive your payouts.
+                </p>
+                <BankAccountForm banks={data.payoutBanks} />
+              </>
+            )}
+          </section>
+          <section className="panel">
+            <h3>Payout history</h3>
+            {data.payouts.length === 0 ? (
+              <p className="muted-copy">No payout requests yet.</p>
+            ) : (
+              <div className="wallet-list compact">
+                {data.payouts.map((row) => (
+                  <div className="wallet-row" key={string(row.id)}>
+                    <div>
+                      <b>
+                        {money(
+                          number(row.amount_minor),
+                          string(row.currency) || "NGN",
+                        )}
+                      </b>
+                      <small>{date(row.requested_at)}</small>
+                    </div>
+                    <span className={`status ${string(row.status)}`}>
+                      {string(row.status)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+          {affiliate ? (
+            <section className="panel wallet-affiliate">
+              <span className="overline">Affiliate wallet</span>
+              <h3>{string(affiliate.code)}</h3>
+              <p>
+                {data.referrals.filter((x) => x.converted_at).length}{" "}
+                conversions from {data.referrals.length} attributed referrals.
+              </p>
+            </section>
+          ) : null}
+        </aside>
+      </div>
     </div>
-    <div className="wallet-grid"><section className="panel"><div className="panel-head"><div><h3>Wallet activity</h3><p>Every earning is recorded in your secure ledger.</p></div></div>
-      {data.ledger.length===0?<Empty text="Your earnings will appear here after a verified course sale or affiliate conversion."/>:<div className="wallet-list">{data.ledger.map(row=>{const payment=object(row.payments);const course=object(payment.courses);const isAffiliate=string(row.entry_type)==="affiliate_commission";return <div className="wallet-row" key={string(row.id)}><span className={isAffiliate?"affiliate-credit":"creator-credit"}>{isAffiliate?"A":"C"}</span><div><b>{isAffiliate?"Affiliate commission":"Course sale earning"}</b><small>{string(course.title)||string(payment.tx_ref)||"Mahadum transaction"} · {date(row.created_at)}</small></div><strong>+{money(number(row.amount_minor),string(row.currency)||"NGN")}</strong></div>})}</div>}
-    </section><aside className="wallet-side"><section className="panel"><h3>Withdraw funds</h3>{data.payoutAccount?<><p>Verified account: {string(data.payoutAccount.account_name)} ····{string(data.payoutAccount.account_number_last4)}</p><PayoutRequestForm available={available}/><details className="wallet-change-account"><summary>Change payout account</summary><BankAccountForm banks={data.payoutBanks}/></details></>:<><p>Connect and verify the Nigerian bank account that should receive your payouts.</p><BankAccountForm banks={data.payoutBanks}/></>}</section>
-      <section className="panel"><h3>Payout history</h3>{data.payouts.length===0?<p className="muted-copy">No payout requests yet.</p>:<div className="wallet-list compact">{data.payouts.map(row=><div className="wallet-row" key={string(row.id)}><div><b>{money(number(row.amount_minor),string(row.currency)||"NGN")}</b><small>{date(row.requested_at)}</small></div><span className={`status ${string(row.status)}`}>{string(row.status)}</span></div>)}</div>}</section>
-      {affiliate?<section className="panel wallet-affiliate"><span className="overline">Affiliate wallet</span><h3>{string(affiliate.code)}</h3><p>{data.referrals.filter(x=>x.converted_at).length} conversions from {data.referrals.length} attributed referrals.</p></section>:null}</aside></div>
-  </div>;
+  );
 }
 
 function FinanceAdmin({ data }: { data: DashboardData }) {
-  const pendingPayouts=data.payouts.filter(row=>string(row.status)==="pending");
-  const pendingPayoutTotal=pendingPayouts.reduce((sum,row)=>sum+number(row.amount_minor),0);
+  const pendingPayouts = data.payouts.filter(
+    (row) => string(row.status) === "pending",
+  );
+  const pendingPayoutTotal = pendingPayouts.reduce(
+    (sum, row) => sum + number(row.amount_minor),
+    0,
+  );
   return (
     <div className="dashboard-page">
       <PageHead
@@ -744,7 +1063,19 @@ function FinanceAdmin({ data }: { data: DashboardData }) {
         )}
       </section>
       <section className="panel">
-        <div className="panel-head finance-payout-head"><div><h3>Payout requests</h3><p>{pendingPayouts.length} pending · {money(pendingPayoutTotal)}</p></div>{pendingPayouts.length>0?<form action={approveAllPendingPayouts}><button className="button">Approve all pending</button></form>:null}</div>
+        <div className="panel-head finance-payout-head">
+          <div>
+            <h3>Payout requests</h3>
+            <p>
+              {pendingPayouts.length} pending · {money(pendingPayoutTotal)}
+            </p>
+          </div>
+          {pendingPayouts.length > 0 ? (
+            <form action={approveAllPendingPayouts}>
+              <button className="button">Approve all pending</button>
+            </form>
+          ) : null}
+        </div>
         {data.payouts.length === 0 ? (
           <Empty text="No payout requests." />
         ) : (
@@ -798,22 +1129,29 @@ function FinanceRow({ row, type }: { row: Row; type: "refund" | "payout" }) {
         {string(row.status)}
       </span>
       <div className="finance-row-actions">
-      {type==="payout"&&string(row.status)==="pending"?<form action={moderateFinance}><input type="hidden" name="id" value={string(row.id)} /><input type="hidden" name="type" value="payout"/><input type="hidden" name="status" value="approved"/><button className="approve-payout-button">Approve</button></form>:null}
-      <form action={moderateFinance} className="row-actions">
-        <input type="hidden" name="id" value={string(row.id)} />
-        <input type="hidden" name="type" value={type} />
-        <select name="status" defaultValue="">
-          <option value="" disabled>
-            Action
-          </option>
-          {options.map((x) => (
-            <option value={x} key={x}>
-              {x}
+        {type === "payout" && string(row.status) === "pending" ? (
+          <form action={moderateFinance}>
+            <input type="hidden" name="id" value={string(row.id)} />
+            <input type="hidden" name="type" value="payout" />
+            <input type="hidden" name="status" value="approved" />
+            <button className="approve-payout-button">Approve</button>
+          </form>
+        ) : null}
+        <form action={moderateFinance} className="row-actions">
+          <input type="hidden" name="id" value={string(row.id)} />
+          <input type="hidden" name="type" value={type} />
+          <select name="status" defaultValue="">
+            <option value="" disabled>
+              Action
             </option>
-          ))}
-        </select>
-        <button>Apply</button>
-      </form>
+            {options.map((x) => (
+              <option value={x} key={x}>
+                {x}
+              </option>
+            ))}
+          </select>
+          <button>Apply</button>
+        </form>
       </div>
     </div>
   );
@@ -898,9 +1236,18 @@ function AdminSection({
       list(x.user_roles).some((r) => r.role === "learner"),
     );
   if (section === "finance") return <FinanceAdmin data={data} />;
-  if (section === "users") return <AdminUsers users={data.users} courses={data.courses.filter(course=>course.status==="published")} currentUserId={data.userId}/>;
-  if (section === "courses") return <AdminCourses courses={data.courses} categories={data.categories}/>;
-  if (section === "affiliates") return <AdminAffiliates affiliates={data.affiliates}/>;
+  if (section === "users")
+    return (
+      <AdminUsers
+        users={data.users}
+        courses={data.courses.filter((course) => course.status === "published")}
+        currentUserId={data.userId}
+      />
+    );
+  if (section === "courses")
+    return <AdminCourses courses={data.courses} categories={data.categories} />;
+  if (section === "affiliates")
+    return <AdminAffiliates affiliates={data.affiliates} />;
   if (section === "settings") return <AdminSettings data={data} />;
   if (section === "overview" || section === "analytics")
     return <Overview role="admin" data={data} />;
@@ -982,11 +1329,42 @@ function AdminSection({
                     </>
                   )}
                   {section === "affiliates" && (
-                    <form action={updateAffiliateCommissions} className="affiliate-rate-form">
-                      <input type="hidden" name="id" value={string(row.user_id)} />
-                      <label>Level one (%)<input name="level_one_percent" type="number" min="0" max="30" step="0.01" defaultValue={number(row.level_one_bps) / 100} required /></label>
-                      <label>Level two (%)<input name="level_two_percent" type="number" min="0" max="30" step="0.01" defaultValue={number(row.level_two_bps) / 100} required /></label>
-                      <button className="outline-button" type="submit">Save commissions</button>
+                    <form
+                      action={updateAffiliateCommissions}
+                      className="affiliate-rate-form"
+                    >
+                      <input
+                        type="hidden"
+                        name="id"
+                        value={string(row.user_id)}
+                      />
+                      <label>
+                        Level one (%)
+                        <input
+                          name="level_one_percent"
+                          type="number"
+                          min="0"
+                          max="30"
+                          step="0.01"
+                          defaultValue={number(row.level_one_bps) / 100}
+                          required
+                        />
+                      </label>
+                      <label>
+                        Level two (%)
+                        <input
+                          name="level_two_percent"
+                          type="number"
+                          min="0"
+                          max="30"
+                          step="0.01"
+                          defaultValue={number(row.level_two_bps) / 100}
+                          required
+                        />
+                      </label>
+                      <button className="outline-button" type="submit">
+                        Save commissions
+                      </button>
                     </form>
                   )}
                 </div>

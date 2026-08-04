@@ -8,7 +8,9 @@ const HASHTAG = /(?:^|\s)#[\p{L}\p{N}_-]+/gu;
 
 function formatOverview(description: string) {
   const clean = description.replace(HASHTAG, "").replace(/\s+/g, " ").trim();
-  const [introduction, learningText = ""] = clean.split(/you will learn how to:/i);
+  const [introduction, learningText = ""] = clean.split(
+    /you will learn how to:/i,
+  );
   const outcomes = learningText
     .split("•")
     .map((item) => item.trim())
@@ -17,38 +19,102 @@ function formatOverview(description: string) {
   return { introduction: introduction.trim(), outcomes };
 }
 
-export default async function CoursePage({ params,searchParams }: { params: Promise<{ slug: string }>;searchParams:Promise<{ref?:string}> }) {
+export default async function CoursePage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ slug: string }>;
+  searchParams: Promise<{ ref?: string }>;
+}) {
   const { slug } = await params;
-  const query=await searchParams;
-  const affiliateCode=/^[a-z0-9-]{4,24}$/.test(query.ref||"")?query.ref:undefined;
+  const query = await searchParams;
+  const affiliateCode = /^[a-z0-9-]{4,24}$/.test(query.ref || "")
+    ? query.ref
+    : undefined;
   const client = await createClient();
   if (!client) notFound();
 
   const coursePromise = client
     .from("courses")
-    .select("id,creator_id,title,short_description,description,learning_outcomes,thumbnail_path,price_minor,currency,trailer_url,categories(name),profiles!courses_creator_id_fkey(full_name,bio),course_modules(id,title,position,lessons(id,title,duration_seconds,is_free_preview,position))")
+    .select(
+      "id,creator_id,title,short_description,description,learning_outcomes,thumbnail_path,price_minor,currency,trailer_url,categories(name),profiles!courses_creator_id_fkey(full_name,bio),course_modules(id,title,position,lessons(id,title,duration_seconds,is_free_preview,position))",
+    )
     .eq("slug", slug)
     .eq("status", "published")
     .maybeSingle();
   const userPromise = client.auth.getUser();
-  const [{ data: course }, { data: { user } }] = await Promise.all([coursePromise, userPromise]);
+  const [
+    { data: course },
+    {
+      data: { user },
+    },
+  ] = await Promise.all([coursePromise, userPromise]);
   if (!course) notFound();
 
-  const creator = course.profiles as unknown as { full_name: string; bio: string | null } | null;
+  const creator = course.profiles as unknown as {
+    full_name: string;
+    bio: string | null;
+  } | null;
   const category = course.categories as unknown as { name: string } | null;
-  const modules = [...(course.course_modules || [])].sort((a, b) => a.position - b.position);
-  const lessons = modules.flatMap((module) => [...(module.lessons || [])].sort((a, b) => a.position - b.position));
-  const totalMinutes = Math.ceil(lessons.reduce((total, lesson) => total + (lesson.duration_seconds || 0), 0) / 60);
-  const price = new Intl.NumberFormat("en-NG", { style: "currency", currency: course.currency, maximumFractionDigits: 0 }).format(course.price_minor / 100);
+  const modules = [...(course.course_modules || [])].sort(
+    (a, b) => a.position - b.position,
+  );
+  const lessons = modules.flatMap((module) =>
+    [...(module.lessons || [])].sort((a, b) => a.position - b.position),
+  );
+  const totalMinutes = Math.ceil(
+    lessons.reduce(
+      (total, lesson) => total + (lesson.duration_seconds || 0),
+      0,
+    ) / 60,
+  );
+  const price = new Intl.NumberFormat("en-NG", {
+    style: "currency",
+    currency: course.currency,
+    maximumFractionDigits: 0,
+  }).format(course.price_minor / 100);
   const isCreator = user?.id === course.creator_id;
-  const enrollment = user && !isCreator ? await client.from("enrollments").select("id").eq("learner_id", user.id).eq("course_id", course.id).maybeSingle() : null;
+  const creatorContact =
+    user && !isCreator
+      ? await client
+          .from("creator_contacts")
+          .select("whatsapp_number")
+          .eq("user_id", course.creator_id)
+          .maybeSingle()
+      : null;
+  const whatsappNumber =
+    creatorContact?.data?.whatsapp_number?.replace(/\D/g, "") || "";
+  const whatsappMessage = encodeURIComponent(
+    `Hello ${creator?.full_name || "there"}, I have a question about your Mahadum course: ${course.title}.`,
+  );
+  const enrollment =
+    user && !isCreator
+      ? await client
+          .from("enrollments")
+          .select("id")
+          .eq("learner_id", user.id)
+          .eq("course_id", course.id)
+          .maybeSingle()
+      : null;
   const isEnrolled = Boolean(enrollment?.data);
   const firstLesson = lessons[0];
   const formatted = formatOverview(course.description);
   const introduction = formatted.introduction;
-  const outcomes: string[] = Array.isArray(course.learning_outcomes) && course.learning_outcomes.length ? course.learning_outcomes.map(String) : formatted.outcomes;
-  const creatorInitials = (creator?.full_name || "Mahadum creator").split(" ").map((part) => part[0]).join("").slice(0, 2).toUpperCase();
-  const thumbnailUrl = course.thumbnail_path?.startsWith("public/") ? client.storage.from("course-thumbnails").getPublicUrl(course.thumbnail_path).data.publicUrl : "";
+  const outcomes: string[] =
+    Array.isArray(course.learning_outcomes) && course.learning_outcomes.length
+      ? course.learning_outcomes.map(String)
+      : formatted.outcomes;
+  const creatorInitials = (creator?.full_name || "Mahadum creator")
+    .split(" ")
+    .map((part) => part[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+  const thumbnailUrl = course.thumbnail_path?.startsWith("public/")
+    ? client.storage
+        .from("course-thumbnails")
+        .getPublicUrl(course.thumbnail_path).data.publicUrl
+    : "";
 
   return (
     <main className="catalogue-page course-sales-page">
@@ -58,20 +124,94 @@ export default async function CoursePage({ params,searchParams }: { params: Prom
           <span className="overline">{category?.name || "Mahadum course"}</span>
           <h1>{course.title.replace(/\s*-\s*/g, " – ")}</h1>
           <p>{course.short_description}</p>
-          <div className="course-byline"><span>{creatorInitials}</span><div><small>Created by</small><strong>{creator?.full_name || "Mahadum creator"}</strong></div></div>
+          <div className="course-byline">
+            <span>{creatorInitials}</span>
+            <div>
+              <small>Created by</small>
+              <strong>{creator?.full_name || "Mahadum creator"}</strong>
+            </div>
+          </div>
           <div className="course-facts" aria-label="Course information">
-            <div><strong>{lessons.length}</strong><span>{lessons.length === 1 ? "Video lesson" : "Video lessons"}</span></div>
-            <div><strong>{totalMinutes || 0} min</strong><span>Total duration</span></div>
-            <div><strong>Beginner</strong><span>Skill level</span></div>
-            <div><strong>English</strong><span>Language</span></div>
+            <div>
+              <strong>{lessons.length}</strong>
+              <span>
+                {lessons.length === 1 ? "Video lesson" : "Video lessons"}
+              </span>
+            </div>
+            <div>
+              <strong>{totalMinutes || 0} min</strong>
+              <span>Total duration</span>
+            </div>
+            <div>
+              <strong>Beginner</strong>
+              <span>Skill level</span>
+            </div>
+            <div>
+              <strong>English</strong>
+              <span>Language</span>
+            </div>
           </div>
         </div>
         <aside className="course-checkout-card">
-          {thumbnailUrl ? <img className="course-thumbnail" src={thumbnailUrl} alt={`${course.title} course thumbnail`} /> : <div className="course-preview-art" aria-label="Course video preview illustration"><span>AI</span><div><i /><i /><i /></div><b>▶</b></div>}
+          {thumbnailUrl ? (
+            <img
+              className="course-thumbnail"
+              src={thumbnailUrl}
+              alt={`${course.title} course thumbnail`}
+            />
+          ) : (
+            <div
+              className="course-preview-art"
+              aria-label="Course video preview illustration"
+            >
+              <span>AI</span>
+              <div>
+                <i />
+                <i />
+                <i />
+              </div>
+              <b>▶</b>
+            </div>
+          )}
           <div className="checkout-body">
-            <small>Complete course</small><strong className="course-price">{price}</strong>
-            {isCreator ? <Link className="button" href={`/dashboard/creator/course-builder?course=${course.id}&step=details`}>Manage this course</Link> : isEnrolled && firstLesson ? <Link className="button" href={`/learn/${course.id}/${firstLesson.id}`}>Continue learning</Link> : user ? <CheckoutButton courseId={course.id} affiliateCode={affiliateCode} /> : <Link className="button" href={`/login?next=${encodeURIComponent(`/courses/${slug}${affiliateCode?`?ref=${affiliateCode}`:""}`)}`}>Log in to enroll</Link>}
-            <ul><li>Full lifetime access</li><li>{lessons.length} on-demand video {lessons.length === 1 ? "lesson" : "lessons"}</li><li>Certificate upon completion</li><li>Learn on mobile or desktop</li></ul>
+            <small>Complete course</small>
+            <strong className="course-price">{price}</strong>
+            {isCreator ? (
+              <Link
+                className="button"
+                href={`/dashboard/creator/course-builder?course=${course.id}&step=details`}
+              >
+                Manage this course
+              </Link>
+            ) : isEnrolled && firstLesson ? (
+              <Link
+                className="button"
+                href={`/learn/${course.id}/${firstLesson.id}`}
+              >
+                Continue learning
+              </Link>
+            ) : user ? (
+              <CheckoutButton
+                courseId={course.id}
+                affiliateCode={affiliateCode}
+              />
+            ) : (
+              <Link
+                className="button"
+                href={`/login?next=${encodeURIComponent(`/courses/${slug}${affiliateCode ? `?ref=${affiliateCode}` : ""}`)}`}
+              >
+                Log in to enroll
+              </Link>
+            )}
+            <ul>
+              <li>Full lifetime access</li>
+              <li>
+                {lessons.length} on-demand video{" "}
+                {lessons.length === 1 ? "lesson" : "lessons"}
+              </li>
+              <li>Certificate upon completion</li>
+              <li>Learn on mobile or desktop</li>
+            </ul>
           </div>
         </aside>
       </section>
@@ -79,15 +219,103 @@ export default async function CoursePage({ params,searchParams }: { params: Prom
       <section className="course-body">
         <div className="course-main-content">
           <section className="course-section-card">
-            <span className="overline">Course overview</span><h2>About this course</h2>
+            <span className="overline">Course overview</span>
+            <h2>About this course</h2>
             <p>{introduction || course.short_description}</p>
           </section>
-          {outcomes.length > 0 ? <section className="course-section-card"><span className="overline">Learning outcomes</span><h2>What you will learn</h2><ul className="outcomes-grid">{outcomes.map((outcome) => <li key={outcome}>{outcome}</li>)}</ul></section> : null}
+          {outcomes.length > 0 ? (
+            <section className="course-section-card">
+              <span className="overline">Learning outcomes</span>
+              <h2>What you will learn</h2>
+              <ul className="outcomes-grid">
+                {outcomes.map((outcome) => (
+                  <li key={outcome}>{outcome}</li>
+                ))}
+              </ul>
+            </section>
+          ) : null}
           <section className="course-section-card">
-            <div className="curriculum-heading"><div><span className="overline">Curriculum</span><h2>Course content</h2></div><span>{modules.length} {modules.length === 1 ? "module" : "modules"} · {lessons.length} {lessons.length === 1 ? "lesson" : "lessons"}</span></div>
-            {modules.length === 0 ? <div className="empty-state"><p>The creator is finalising the curriculum.</p></div> : modules.map((module, moduleIndex) => <section className="curriculum-card" key={module.id}><header><span>Module {moduleIndex + 1}</span><h3>{module.title}</h3></header>{[...(module.lessons || [])].sort((a, b) => a.position - b.position).map((lesson, index) => <div className="curriculum-lesson" key={lesson.id}><span>{index + 1}</span><div><b>{lesson.title}</b><small>{Math.ceil((lesson.duration_seconds || 0) / 60)} min</small></div>{lesson.is_free_preview ? <Link href={`/learn/${course.id}/${lesson.id}`}>Preview</Link> : <em aria-label="Enrollment required">Locked</em>}</div>)}</section>)}
+            <div className="curriculum-heading">
+              <div>
+                <span className="overline">Curriculum</span>
+                <h2>Course content</h2>
+              </div>
+              <span>
+                {modules.length} {modules.length === 1 ? "module" : "modules"} ·{" "}
+                {lessons.length} {lessons.length === 1 ? "lesson" : "lessons"}
+              </span>
+            </div>
+            {modules.length === 0 ? (
+              <div className="empty-state">
+                <p>The creator is finalising the curriculum.</p>
+              </div>
+            ) : (
+              modules.map((module, moduleIndex) => (
+                <section className="curriculum-card" key={module.id}>
+                  <header>
+                    <span>Module {moduleIndex + 1}</span>
+                    <h3>{module.title}</h3>
+                  </header>
+                  {[...(module.lessons || [])]
+                    .sort((a, b) => a.position - b.position)
+                    .map((lesson, index) => (
+                      <div className="curriculum-lesson" key={lesson.id}>
+                        <span>{index + 1}</span>
+                        <div>
+                          <b>{lesson.title}</b>
+                          <small>
+                            {Math.ceil((lesson.duration_seconds || 0) / 60)} min
+                          </small>
+                        </div>
+                        {lesson.is_free_preview ? (
+                          <Link href={`/learn/${course.id}/${lesson.id}`}>
+                            Preview
+                          </Link>
+                        ) : (
+                          <em aria-label="Enrollment required">Locked</em>
+                        )}
+                      </div>
+                    ))}
+                </section>
+              ))
+            )}
           </section>
-          <section className="course-section-card creator-profile-card"><div className="creator-large-avatar">{creatorInitials}</div><div><span className="overline">Your instructor</span><h2>{creator?.full_name || "Mahadum creator"}</h2><p>{creator?.bio || "An experienced practitioner sharing practical, project-based knowledge on Mahadum."}</p></div></section>
+          <section className="course-section-card creator-profile-card">
+            <div className="creator-large-avatar">{creatorInitials}</div>
+            <div>
+              <span className="overline">Your instructor</span>
+              <h2>{creator?.full_name || "Mahadum creator"}</h2>
+              <p>
+                {creator?.bio ||
+                  "An experienced practitioner sharing practical, project-based knowledge on Mahadum."}
+              </p>
+              {whatsappNumber ? (
+                <a
+                  className="whatsapp-creator-button"
+                  href={`https://wa.me/${whatsappNumber}?text=${whatsappMessage}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={`Ask ${creator?.full_name || "the creator"} a question on WhatsApp`}
+                >
+                  <svg viewBox="0 0 32 32" aria-hidden="true">
+                    <path
+                      fill="currentColor"
+                      d="M16 3a13 13 0 0 0-11.2 19.6L3 29l6.6-1.7A13 13 0 1 0 16 3Zm0 23.6c-2.1 0-4.1-.6-5.8-1.7l-.4-.2-3.9 1 1.1-3.8-.3-.4A10.6 10.6 0 1 1 16 26.6Zm5.8-7.9c-.3-.2-1.9-.9-2.2-1s-.5-.2-.7.2-.8 1-1 1.2-.4.2-.7.1a8.7 8.7 0 0 1-2.6-1.6 9.7 9.7 0 0 1-1.8-2.2c-.2-.3 0-.5.1-.7l.5-.6.3-.6c.1-.2 0-.4 0-.6l-1-2.3c-.2-.6-.5-.5-.7-.5h-.6c-.2 0-.6.1-.9.4s-1.2 1.2-1.2 2.9 1.2 3.3 1.4 3.5c.2.2 2.4 3.7 5.9 5.2.8.4 1.5.6 2 .7.8.3 1.6.2 2.2.1.7-.1 1.9-.8 2.2-1.5.3-.7.3-1.4.2-1.5-.1-.2-.4-.3-.7-.5Z"
+                    />
+                  </svg>
+                  <span>
+                    <strong>Ask a question on WhatsApp</strong>
+                    <small>Chat directly with the course creator</small>
+                  </span>
+                  <b>↗</b>
+                </a>
+              ) : user && !isCreator ? (
+                <p className="creator-contact-unavailable">
+                  This creator has not added a WhatsApp contact yet.
+                </p>
+              ) : null}
+            </div>
+          </section>
         </div>
       </section>
     </main>
