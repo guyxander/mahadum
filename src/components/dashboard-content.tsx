@@ -898,7 +898,7 @@ function AdminSection({
       list(x.user_roles).some((r) => r.role === "learner"),
     );
   if (section === "finance") return <FinanceAdmin data={data} />;
-  if (section === "users") return <AdminUsers users={data.users} currentUserId={data.userId}/>;
+  if (section === "users") return <AdminUsers users={data.users} courses={data.courses.filter(course=>course.status==="published")} currentUserId={data.userId}/>;
   if (section === "courses") return <AdminCourses courses={data.courses} categories={data.categories}/>;
   if (section === "affiliates") return <AdminAffiliates affiliates={data.affiliates}/>;
   if (section === "settings") return <AdminSettings data={data} />;

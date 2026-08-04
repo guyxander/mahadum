@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { youtubeVideoId } from "@/lib/youtube";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 const text = (data: FormData, key: string) =>
   String(data.get(key) || "").trim();
@@ -370,6 +371,36 @@ export async function updateAffiliateCommissions(data: FormData) {
   revalidatePath("/dashboard/admin/affiliates");
   revalidatePath("/dashboard/creator/affiliates");
   revalidatePath("/dashboard/learner/affiliates");
+}
+export async function grantCourseAccess(data: FormData) {
+  const { user } = await context("admin");
+  const learnerId = text(data, "user_id");
+  const courseId = text(data, "course_id");
+  if (!learnerId || !courseId) throw new Error("Choose a user and course");
+  const admin = createAdminClient();
+  const [{ data: learner, error: learnerError }, { data: course, error: courseError }] = await Promise.all([
+    admin.from("profiles").select("id").eq("id", learnerId).maybeSingle(),
+    admin.from("courses").select("id,title,status").eq("id", courseId).eq("status", "published").maybeSingle(),
+  ]);
+  if (learnerError) throw learnerError;
+  if (courseError) throw courseError;
+  if (!learner) throw new Error("User account was not found");
+  if (!course) throw new Error("Only published courses can be unlocked");
+  const { error } = await admin.from("enrollments").upsert(
+    { learner_id: learnerId, course_id: courseId, payment_id: null },
+    { onConflict: "learner_id,course_id", ignoreDuplicates: true },
+  );
+  if (error) throw error;
+  await admin.from("audit_logs").insert({
+    actor_id: user.id,
+    action: "course_access_granted",
+    entity_type: "enrollment",
+    entity_id: `${learnerId}:${courseId}`,
+    metadata: { learner_id: learnerId, course_id: courseId, course_title: course.title, payment_required: false },
+  });
+  revalidatePath("/dashboard/admin/users");
+  revalidatePath("/dashboard/admin/audit-log");
+  revalidatePath("/dashboard/learner/my-learning");
 }
 export async function applyAffiliate(data: FormData) {
   const { client, user } = await context();
