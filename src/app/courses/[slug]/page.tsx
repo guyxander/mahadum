@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { createAdminClient } from "@/lib/supabase/admin";
 import { CheckoutButton } from "@/components/checkout-button";
 import { PublicHeader } from "@/components/public-header";
 
@@ -52,22 +51,63 @@ export default async function CoursePage({
   ] = await Promise.all([coursePromise, userPromise]);
   if (!course) notFound();
 
-  const admin = createAdminClient();
-  const { data: outline, error: outlineError } = await admin
-    .from("course_modules")
-    .select(
-      "id,title,position,lessons(id,title,duration_seconds,is_free_preview,position)",
-    )
-    .eq("course_id", course.id)
-    .order("position");
+  const { data: outlineRows, error: outlineError } = await client.rpc(
+    "get_public_course_outline",
+    { p_course_id: course.id },
+  );
   if (outlineError) throw outlineError;
+
+  const safeOutlineRows = (outlineRows || []) as Array<{
+    module_id: string;
+    module_title: string;
+    module_position: number;
+    lesson_id: string | null;
+    lesson_title: string | null;
+    duration_seconds: number | null;
+    is_free_preview: boolean | null;
+    lesson_position: number | null;
+  }>;
+  const outline = safeOutlineRows.reduce(
+    (modules: Array<{
+      id: string;
+      title: string;
+      position: number;
+      lessons: Array<{
+        id: string;
+        title: string;
+        duration_seconds: number;
+        is_free_preview: boolean;
+        position: number;
+      }>;
+    }>, row) => {
+    let courseModule = modules.find((item) => item.id === row.module_id);
+    if (!courseModule) {
+      courseModule = {
+        id: row.module_id,
+        title: row.module_title,
+        position: row.module_position,
+        lessons: [],
+      };
+      modules.push(courseModule);
+    }
+    if (row.lesson_id) {
+      courseModule.lessons.push({
+        id: row.lesson_id,
+        title: row.lesson_title || "Lesson",
+        duration_seconds: row.duration_seconds || 0,
+        is_free_preview: row.is_free_preview || false,
+        position: row.lesson_position || 0,
+      });
+    }
+    return modules;
+  }, []);
 
   const creator = course.profiles as unknown as {
     full_name: string;
     bio: string | null;
   } | null;
   const category = course.categories as unknown as { name: string } | null;
-  const modules = [...(outline || [])].sort(
+  const modules = [...outline].sort(
     (a, b) => a.position - b.position,
   );
   const lessons = modules.flatMap((module) =>
