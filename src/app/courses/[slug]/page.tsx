@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { CheckoutButton } from "@/components/checkout-button";
 import { PublicHeader } from "@/components/public-header";
 
@@ -37,7 +38,7 @@ export default async function CoursePage({
   const coursePromise = client
     .from("courses")
     .select(
-      "id,creator_id,title,short_description,description,learning_outcomes,thumbnail_path,price_minor,currency,trailer_url,categories(name),profiles!courses_creator_id_fkey(full_name,bio),course_modules(id,title,position,lessons(id,title,duration_seconds,is_free_preview,position))",
+      "id,creator_id,title,short_description,description,learning_outcomes,thumbnail_path,price_minor,currency,trailer_url,categories(name),profiles!courses_creator_id_fkey(full_name,bio)",
     )
     .eq("slug", slug)
     .eq("status", "published")
@@ -51,12 +52,22 @@ export default async function CoursePage({
   ] = await Promise.all([coursePromise, userPromise]);
   if (!course) notFound();
 
+  const admin = createAdminClient();
+  const { data: outline, error: outlineError } = await admin
+    .from("course_modules")
+    .select(
+      "id,title,position,lessons(id,title,duration_seconds,is_free_preview,position)",
+    )
+    .eq("course_id", course.id)
+    .order("position");
+  if (outlineError) throw outlineError;
+
   const creator = course.profiles as unknown as {
     full_name: string;
     bio: string | null;
   } | null;
   const category = course.categories as unknown as { name: string } | null;
-  const modules = [...(course.course_modules || [])].sort(
+  const modules = [...(outline || [])].sort(
     (a, b) => a.position - b.position,
   );
   const lessons = modules.flatMap((module) =>
