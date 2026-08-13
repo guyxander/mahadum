@@ -716,7 +716,7 @@ function AffiliatePanel({ data }: { data: DashboardData }) {
   const affiliate = data.affiliates[0];
   const affiliateStatus = string(affiliate?.status);
   const siteUrl =
-    process.env.NEXT_PUBLIC_SITE_URL || "https://mahadum.vercel.app";
+    process.env.NEXT_PUBLIC_SITE_URL || "https://mahadum.xyz";
   return (
     <div className="dashboard-page">
       <PageHead

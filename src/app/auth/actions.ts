@@ -12,7 +12,7 @@ export async function signOut() {
 export async function signInWithGoogle(formData: FormData) {
   const client = await createClient();
   if (!client) redirect("/login?message=Google+sign-in+is+temporarily+unavailable");
-  const site = process.env.NEXT_PUBLIC_SITE_URL || "https://mahadum.vercel.app";
+  const site = process.env.NEXT_PUBLIC_SITE_URL || "https://mahadum.xyz";
   const requestedNext = String(formData.get("next") || "/dashboard/learner/my-learning");
   const next = requestedNext.startsWith("/") && !requestedNext.startsWith("//") ? requestedNext : "/dashboard/learner/my-learning";
   const candidate = String(formData.get("referrer") || "");
