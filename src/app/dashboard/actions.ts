@@ -51,6 +51,7 @@ export async function saveCourse(data: FormData) {
     description: text(data, "description"),
     learning_outcomes: learningOutcomes,
     price_minor: Math.round(Number(text(data, "price")) * 100),
+    affiliate_bonus_bps: Math.round(Number(text(data, "affiliate_bonus_percent") || 0) * 100),
     currency: "NGN",
   };
   if (
@@ -60,9 +61,12 @@ export async function saveCourse(data: FormData) {
     learningOutcomes.length === 0 ||
     !Number.isFinite(payload.price_minor) ||
     payload.price_minor < 0
+    || !Number.isFinite(payload.affiliate_bonus_bps)
+    || payload.affiliate_bonus_bps < 0
+    || payload.affiliate_bonus_bps > 7000
   )
     throw new Error(
-      "Complete all course fields and add at least one learning outcome",
+      "Complete all course fields, add a learning outcome, and keep the affiliate bonus between 0% and 70%",
     );
   let courseId = id;
   if (id) {

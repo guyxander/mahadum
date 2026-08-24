@@ -393,6 +393,23 @@ function CourseForm({
           />
         </label>
       </div>
+      <label className="affiliate-bonus-field">
+        Extra affiliate commission from your share (%)
+        <input
+          name="affiliate_bonus_percent"
+          type="number"
+          min="0"
+          max="70"
+          step="0.01"
+          defaultValue={course ? number(course.affiliate_bonus_bps) / 100 : 0}
+          required
+        />
+        <small>
+          Optional. This is added to the direct affiliate&apos;s commission only
+          when their link produces a sale, and is deducted from your 70% share.
+          Enter 0 to keep the standard commission.
+        </small>
+      </label>
       {!course ? (
         <fieldset className="first-video-fields">
           <legend>First YouTube lesson</legend>
