@@ -714,6 +714,39 @@ export async function savePublicSetting(data: FormData) {
   if (error) throw error;
   revalidatePath("/dashboard/admin/settings");
 }
+export async function savePlatformSetting(data: FormData) {
+  const { client, user } = await context("admin");
+  const key = text(data, "setting_key");
+  let value: Record<string, string | number>;
+  if (key === "finance.revenue_split") {
+    const creator = Number(text(data, "creator_percent"));
+    const platform = Number(text(data, "platform_percent"));
+    const levelOne = Number(text(data, "affiliate_level_one_percent"));
+    const levelTwo = Number(text(data, "affiliate_level_two_percent"));
+    if ([creator, platform, levelOne, levelTwo].some((x) => !Number.isFinite(x) || x < 0 || x > 100)) throw new Error("Enter valid percentages between 0 and 100.");
+    if (Math.abs(creator + platform + levelOne + levelTwo - 100) > 0.001) throw new Error("Revenue percentages must total 100%.");
+    value = { creator_bps: Math.round(creator * 100), platform_bps: Math.round(platform * 100), affiliate_level_one_bps: Math.round(levelOne * 100), affiliate_level_two_bps: Math.round(levelTwo * 100), unallocated_affiliate_share: "retained_by_platform" };
+  } else if (key === "finance.payout_policy") {
+    const minimum = Number(text(data, "minimum_ngn"));
+    const schedule = text(data, "schedule");
+    if (!Number.isFinite(minimum) || minimum < 0) throw new Error("Enter a valid payout minimum.");
+    if (!["daily", "weekly_friday", "twice_monthly", "monthly", "manual"].includes(schedule)) throw new Error("Choose a valid payout schedule.");
+    value = { currency: "NGN", minimum_minor: Math.round(minimum * 100), schedule, settlement_hold_days: 0 };
+  } else if (key === "finance.refund_policy") {
+    const windowDays = Number(text(data, "window_days"));
+    if (!Number.isInteger(windowDays) || windowDays < 0 || windowDays > 365) throw new Error("Refund window must be between 0 and 365 days.");
+    value = { window_days: windowDays, eligibility: text(data, "eligibility") };
+  } else if (key === "support.contact") {
+    const responseHours = Number(text(data, "response_target_hours"));
+    const email = text(data, "email");
+    if (!/^\S+@\S+\.\S+$/.test(email)) throw new Error("Enter a valid support email.");
+    if (!Number.isInteger(responseHours) || responseHours < 1 || responseHours > 720) throw new Error("Response time must be between 1 and 720 hours.");
+    value = { email, response_target_hours: responseHours };
+  } else throw new Error("Unsupported platform setting.");
+  const { error } = await client.from("platform_settings").upsert({ key, value, is_public: true, updated_by: user.id }, { onConflict: "key" });
+  if (error) throw error;
+  revalidatePath("/dashboard/admin/settings");
+}
 export async function updateCourseThumbnail(data: FormData) {
   const { client, user } = await context("creator");
   const path = text(data, "path");

@@ -14,6 +14,7 @@ import {
   saveCategory,
   saveCourse,
   savePublicSetting,
+  savePlatformSetting,
   saveReview,
   submitCourse,
   updateLesson,
@@ -1170,6 +1171,10 @@ function FinanceRow({ row, type }: { row: Row; type: "refund" | "payout" }) {
   );
 }
 function AdminSettings({ data }: { data: DashboardData }) {
+  const setting = (key: string) => object(data.settings.find((row) => string(row.key) === key)?.value);
+  const revenue = setting("finance.revenue_split"), payout = setting("finance.payout_policy"), refund = setting("finance.refund_policy"), support = setting("support.contact");
+  const standardKeys = new Set(["finance.revenue_split", "finance.payout_policy", "finance.refund_policy", "support.contact"]);
+  const customSettings = data.settings.filter((row) => !standardKeys.has(string(row.key)));
   return (
     <div className="dashboard-page admin-settings-page">
       <PageHead
@@ -1206,16 +1211,40 @@ function AdminSettings({ data }: { data: DashboardData }) {
       <section className="panel settings-section">
         <div className="settings-section-head">
           <div><span className="settings-icon">P</span><div><h3>Public configuration</h3><p>Non-secret values that may be visible across Mahadum.</p></div></div>
-          <span>{data.settings.length} settings</span>
+          <span>4 groups</span>
         </div>
-        <div className="public-settings-list">
-          {data.settings.map((row) => (
-            <div className="public-setting-card" key={string(row.key)}>
-              <div><small>Setting key</small><b>{string(row.key)}</b></div>
-              <code>{JSON.stringify(row.value, null, 2)}</code>
+        <div className="settings-editor-grid">
+          <form action={savePlatformSetting} className="settings-editor-card">
+            <input type="hidden" name="setting_key" value="finance.revenue_split" />
+            <div className="settings-editor-head"><span>₦</span><div><h4>Revenue split</h4><p>How each completed sale is distributed.</p></div></div>
+            <div className="settings-field-grid four">
+              <label>Creator share (%)<input name="creator_percent" type="number" min="0" max="100" step="0.01" defaultValue={number(revenue.creator_bps) / 100} required /></label>
+              <label>Mahadum share (%)<input name="platform_percent" type="number" min="0" max="100" step="0.01" defaultValue={number(revenue.platform_bps) / 100} required /></label>
+              <label>Affiliate level one (%)<input name="affiliate_level_one_percent" type="number" min="0" max="100" step="0.01" defaultValue={number(revenue.affiliate_level_one_bps) / 100} required /></label>
+              <label>Affiliate level two (%)<input name="affiliate_level_two_percent" type="number" min="0" max="100" step="0.01" defaultValue={number(revenue.affiliate_level_two_bps) / 100} required /></label>
             </div>
-          ))}
+            <small className="settings-help">All four percentages must total 100%.</small><button className="button">Save revenue split</button>
+          </form>
+          <form action={savePlatformSetting} className="settings-editor-card">
+            <input type="hidden" name="setting_key" value="finance.payout_policy" />
+            <div className="settings-editor-head"><span>P</span><div><h4>Payout policy</h4><p>Control when creators and affiliates can withdraw.</p></div></div>
+            <div className="settings-field-grid"><label>Minimum payout (NGN)<input name="minimum_ngn" type="number" min="0" step="100" defaultValue={number(payout.minimum_minor) / 100} required /></label><label>Payout schedule<select name="schedule" defaultValue={string(payout.schedule) || "weekly_friday"}><option value="daily">Daily</option><option value="weekly_friday">Every Friday</option><option value="twice_monthly">Twice monthly</option><option value="monthly">Monthly</option><option value="manual">Manual</option></select></label></div>
+            <small className="settings-help">Settlement hold is disabled.</small><button className="button">Save payout policy</button>
+          </form>
+          <form action={savePlatformSetting} className="settings-editor-card">
+            <input type="hidden" name="setting_key" value="finance.refund_policy" />
+            <div className="settings-editor-head"><span>R</span><div><h4>Refund policy</h4><p>Set the request window and eligibility summary.</p></div></div>
+            <div className="settings-field-grid"><label>Refund window (days)<input name="window_days" type="number" min="0" max="365" defaultValue={number(refund.window_days)} required /></label><label>Eligibility summary<input name="eligibility" defaultValue={string(refund.eligibility)} required /></label></div>
+            <button className="button">Save refund policy</button>
+          </form>
+          <form action={savePlatformSetting} className="settings-editor-card">
+            <input type="hidden" name="setting_key" value="support.contact" />
+            <div className="settings-editor-head"><span>@</span><div><h4>Support contact</h4><p>Public contact details shown to customers.</p></div></div>
+            <div className="settings-field-grid"><label>Support email<input name="email" type="email" defaultValue={string(support.email)} required /></label><label>Response target (hours)<input name="response_target_hours" type="number" min="1" max="720" defaultValue={number(support.response_target_hours)} required /></label></div>
+            <button className="button">Save support contact</button>
+          </form>
         </div>
+        {customSettings.length ? <div className="custom-settings-list"><h4>Other public settings</h4>{customSettings.map((row)=><div key={string(row.key)}><b>{string(row.key).replace(/^public\./, "").replaceAll(".", " ")}</b><span>{string(object(row.value).value) || "Configured"}</span></div>)}</div> : null}
         <form action={savePublicSetting} className="settings-add-public">
           <div><b>Add or update a public setting</b><small>Never enter API keys, passwords, or other secrets here.</small></div>
           <label>Setting key<div className="settings-prefixed-input"><span>public.</span><input name="key" placeholder="announcement" required /></div></label>

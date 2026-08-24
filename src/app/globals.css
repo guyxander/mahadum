@@ -1,6 +1,7 @@
 @import "tailwindcss";
 @import "./affiliate-links.css";
 @import "./admin-affiliates.css";
+@import "./settings-editor.css";
 @import "./admin-course-grants.css";
 @import "./auth-mobile.css";
 @import "./creator-contact.css";
