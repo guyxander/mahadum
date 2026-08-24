@@ -47,6 +47,11 @@ function DetailsForm({ categories, course }: { categories: Row[]; course?: Row }
         <label>Category<select name="category_id" defaultValue={string(course?.category_id)} required><option value="">Select category</option>{categories.map((category) => <option value={string(category.id)} key={string(category.id)}>{string(category.name)}</option>)}</select></label>
         <label>Price (NGN)<input name="price" type="number" min="0" step="100" defaultValue={course ? number(course.price_minor) / 100 : undefined} required /></label>
       </div>
+      <label className="affiliate-bonus-field">
+        Extra affiliate commission from your share (%)
+        <input name="affiliate_bonus_percent" type="number" min="0" max="70" step="0.01" defaultValue={course ? number(course.affiliate_bonus_bps) / 100 : 0} required />
+        <small>Optional. Added to the direct affiliate&apos;s commission after a referred sale and deducted from your 70% creator share. Enter 0 to use only the standard affiliate commission.</small>
+      </label>
       <button className="button">Next: Add modules</button>
     </form>
   );
