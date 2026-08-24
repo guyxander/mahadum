@@ -1171,59 +1171,56 @@ function FinanceRow({ row, type }: { row: Row; type: "refund" | "payout" }) {
 }
 function AdminSettings({ data }: { data: DashboardData }) {
   return (
-    <div className="dashboard-page">
+    <div className="dashboard-page admin-settings-page">
       <PageHead
         title="Settings"
         subtitle="Manage marketplace categories and non-secret public configuration."
       />
-      <section className="panel">
-        <h3>Categories</h3>
-        {data.categories.map((row) => (
-          <form
-            action={saveCategory}
-            className="inline-form"
-            key={string(row.id)}
-          >
-            <input type="hidden" name="id" value={string(row.id)} />
-            <input name="name" defaultValue={string(row.name)} required />
-            <input name="description" defaultValue={string(row.description)} />
-            <input
-              name="sort_order"
-              type="number"
-              defaultValue={number(row.sort_order)}
-            />
-            <label>
-              <input
-                name="is_active"
-                type="checkbox"
-                defaultChecked={Boolean(row.is_active)}
-              />{" "}
-              Active
-            </label>
-            <button className="outline-button">Save</button>
-          </form>
-        ))}
-        <form action={saveCategory} className="inline-form">
-          <input name="name" placeholder="New category" required />
-          <input name="description" placeholder="Description" />
-          <input name="sort_order" type="number" defaultValue="0" />
-          <label>
-            <input name="is_active" type="checkbox" defaultChecked /> Active
-          </label>
-          <button className="button">Add</button>
+      <section className="panel settings-section">
+        <div className="settings-section-head">
+          <div><span className="settings-icon">C</span><div><h3>Course categories</h3><p>Organise courses and control what learners can browse.</p></div></div>
+          <span>{data.categories.length} categories</span>
+        </div>
+        <div className="settings-category-list">
+          {data.categories.map((row, index) => (
+            <form action={saveCategory} className="settings-category-row" key={string(row.id)}>
+              <input type="hidden" name="id" value={string(row.id)} />
+              <span className="settings-row-number">{index + 1}</span>
+              <label>Name<input name="name" defaultValue={string(row.name)} required /></label>
+              <label className="settings-description">Description<input name="description" defaultValue={string(row.description)} placeholder="Describe this category" /></label>
+              <label className="settings-order">Order<input name="sort_order" type="number" min="0" defaultValue={number(row.sort_order)} /></label>
+              <label className="settings-toggle"><input name="is_active" type="checkbox" defaultChecked={Boolean(row.is_active)} /><span aria-hidden="true" /> Active</label>
+              <button className="outline-button">Save changes</button>
+            </form>
+          ))}
+        </div>
+        <form action={saveCategory} className="settings-add-category">
+          <div><b>Add a new category</b><small>Create another section for marketplace courses.</small></div>
+          <label>Name<input name="name" placeholder="e.g. Business" required /></label>
+          <label>Description<input name="description" placeholder="What learners will find here" /></label>
+          <label>Order<input name="sort_order" type="number" min="0" defaultValue="0" /></label>
+          <label className="settings-toggle"><input name="is_active" type="checkbox" defaultChecked /><span aria-hidden="true" /> Active</label>
+          <button className="button">Add category</button>
         </form>
       </section>
-      <section className="panel">
-        <h3>Public settings</h3>
-        {data.settings.map((row) => (
-          <p key={string(row.key)}>
-            <b>{string(row.key)}:</b> {JSON.stringify(row.value)}
-          </p>
-        ))}
-        <form action={savePublicSetting} className="inline-form">
-          <input name="key" placeholder="announcement" required />
-          <input name="value" placeholder="Public value" required />
-          <button className="outline-button">Save setting</button>
+      <section className="panel settings-section">
+        <div className="settings-section-head">
+          <div><span className="settings-icon">P</span><div><h3>Public configuration</h3><p>Non-secret values that may be visible across Mahadum.</p></div></div>
+          <span>{data.settings.length} settings</span>
+        </div>
+        <div className="public-settings-list">
+          {data.settings.map((row) => (
+            <div className="public-setting-card" key={string(row.key)}>
+              <div><small>Setting key</small><b>{string(row.key)}</b></div>
+              <code>{JSON.stringify(row.value, null, 2)}</code>
+            </div>
+          ))}
+        </div>
+        <form action={savePublicSetting} className="settings-add-public">
+          <div><b>Add or update a public setting</b><small>Never enter API keys, passwords, or other secrets here.</small></div>
+          <label>Setting key<div className="settings-prefixed-input"><span>public.</span><input name="key" placeholder="announcement" required /></div></label>
+          <label>Public value<input name="value" placeholder="Value shown publicly" required /></label>
+          <button className="button">Save setting</button>
         </form>
       </section>
     </div>
