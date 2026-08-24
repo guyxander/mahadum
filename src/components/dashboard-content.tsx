@@ -611,7 +611,7 @@ function Explore({ data }: { data: DashboardData }) {
                 </small>
                 <h3>{string(course.title)}</h3>
                 <p>{string(course.short_description)}</p>
-                <CheckoutButton courseId={string(course.id)} />
+                <CheckoutButton courseId={string(course.id)} variant="explore" />
               </div>
             </article>
           ))
