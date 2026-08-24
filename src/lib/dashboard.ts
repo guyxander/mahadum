@@ -92,7 +92,7 @@ export async function loadDashboard(role: string) {
     client
       .from("courses")
       .select(
-        "id,title,slug,short_description,thumbnail_path,price_minor,currency",
+        "id,title,slug,short_description,thumbnail_path,price_minor,currency,affiliate_bonus_bps",
       )
       .eq("status", "published")
       .order("published_at", { ascending: false }),

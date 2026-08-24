@@ -788,6 +788,7 @@ function AffiliatePanel({ data }: { data: DashboardData }) {
             <AffiliateCourseLinks
               code={string(affiliate.code)}
               siteUrl={siteUrl}
+              baseCommissionPercent={number(affiliate.level_one_bps) / 100}
               courses={data.marketplaceCourses.map((course) => ({
                 id: string(course.id),
                 title: string(course.title),
@@ -795,6 +796,7 @@ function AffiliatePanel({ data }: { data: DashboardData }) {
                 shortDescription: string(course.short_description),
                 priceMinor: number(course.price_minor),
                 currency: string(course.currency) || "NGN",
+                affiliateBonusPercent: number(course.affiliate_bonus_bps) / 100,
               }))}
             />
           ) : (
