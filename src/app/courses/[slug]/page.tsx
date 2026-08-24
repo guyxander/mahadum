@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { CheckoutButton } from "@/components/checkout-button";
 import { PublicHeader } from "@/components/public-header";
 
@@ -51,13 +52,21 @@ export default async function CoursePage({
   ] = await Promise.all([coursePromise, userPromise]);
   if (!course) notFound();
 
-  const { data: outlineRows, error: outlineError } = await client.rpc(
-    "get_public_course_outline",
-    { p_course_id: course.id },
-  );
+  const admin = createAdminClient();
+  const { data: outlineModules, error: outlineError } = await admin
+    .from("course_modules")
+    .select("id,title,position,lessons(id,title,duration_seconds,is_free_preview,position)")
+    .eq("course_id", course.id)
+    .order("position")
+    .order("position", { referencedTable: "lessons" });
   if (outlineError) throw outlineError;
 
-  const safeOutlineRows = (outlineRows || []) as Array<{
+  const safeOutlineRows = (outlineModules || []).flatMap((module) => {
+    const lessons = Array.isArray(module.lessons) ? module.lessons : [];
+    if (lessons.length === 0)
+      return [{ module_id: module.id, module_title: module.title, module_position: module.position, lesson_id: null, lesson_title: null, duration_seconds: null, is_free_preview: null, lesson_position: null }];
+    return lessons.map((lesson) => ({ module_id: module.id, module_title: module.title, module_position: module.position, lesson_id: lesson.id, lesson_title: lesson.title, duration_seconds: lesson.duration_seconds, is_free_preview: lesson.is_free_preview, lesson_position: lesson.position }));
+  }) as Array<{
     module_id: string;
     module_title: string;
     module_position: number;
