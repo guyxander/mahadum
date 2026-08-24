@@ -13,7 +13,6 @@ import {
   moderateFinance,
   saveCategory,
   saveCourse,
-  savePublicSetting,
   savePlatformSetting,
   saveReview,
   submitCourse,
@@ -1245,12 +1244,6 @@ function AdminSettings({ data }: { data: DashboardData }) {
           </form>
         </div>
         {customSettings.length ? <div className="custom-settings-list"><h4>Other public settings</h4>{customSettings.map((row)=><div key={string(row.key)}><b>{string(row.key).replace(/^public\./, "").replaceAll(".", " ")}</b><span>{string(object(row.value).value) || "Configured"}</span></div>)}</div> : null}
-        <form action={savePublicSetting} className="settings-add-public">
-          <div><b>Add or update a public setting</b><small>Never enter API keys, passwords, or other secrets here.</small></div>
-          <label>Setting key<div className="settings-prefixed-input"><span>public.</span><input name="key" placeholder="announcement" required /></div></label>
-          <label>Public value<input name="value" placeholder="Value shown publicly" required /></label>
-          <button className="button">Save setting</button>
-        </form>
       </section>
     </div>
   );

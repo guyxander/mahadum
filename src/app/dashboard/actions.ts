@@ -699,21 +699,6 @@ export async function saveCategory(data: FormData) {
   if (error) throw error;
   revalidatePath("/dashboard/admin/settings");
 }
-export async function savePublicSetting(data: FormData) {
-  const { client, user } = await context("admin");
-  const key = `public.${slugify(text(data, "key")).replaceAll("-", ".")}`;
-  const { error } = await client.from("platform_settings").upsert(
-    {
-      key,
-      value: { value: text(data, "value") },
-      is_public: true,
-      updated_by: user.id,
-    },
-    { onConflict: "key" },
-  );
-  if (error) throw error;
-  revalidatePath("/dashboard/admin/settings");
-}
 export async function savePlatformSetting(data: FormData) {
   const { client, user } = await context("admin");
   const key = text(data, "setting_key");
