@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { CheckoutButton } from "@/components/checkout-button";
 import { PublicHeader } from "@/components/public-header";
+import { CourseVisitTracker } from "@/components/course-visit-tracker";
 
 const HASHTAG = /(?:^|\s)#[\p{L}\p{N}_-]+/gu;
 
@@ -178,6 +179,7 @@ export default async function CoursePage({
 
   return (
     <main className="catalogue-page course-sales-page">
+      <CourseVisitTracker courseId={course.id} affiliateCode={affiliateCode} />
       <PublicHeader courseBack />
       <section className="course-hero">
         <div className="course-hero-copy">

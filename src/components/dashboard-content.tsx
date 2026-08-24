@@ -84,6 +84,8 @@ export function DashboardContent({
     );
   if (role === "creator" && section === "courses")
     return <CreatorCourses data={data} />;
+  if (role === "creator" && section === "analytics")
+    return <CreatorAnalytics data={data} />;
   if (role === "creator" && section === "affiliates")
     return <AffiliatePanel data={data} />;
   if (role === "creator" && section === "transactions")
@@ -798,6 +800,8 @@ function AffiliatePanel({ data }: { data: DashboardData }) {
                 currency: string(course.currency) || "NGN",
                 affiliateBonusPercent: number(course.affiliate_bonus_bps) / 100,
                 salesCount: number(list(course.payments)[0]?.count),
+                visits: data.affiliateLinkEvents.filter((event) => string(event.course_id) === string(course.id) && string(event.event_type) === "visit").length,
+                copies: data.affiliateLinkEvents.filter((event) => string(event.course_id) === string(course.id) && string(event.event_type) === "copy").length,
               }))}
             />
           ) : (
@@ -822,6 +826,16 @@ function AffiliatePanel({ data }: { data: DashboardData }) {
     </div>
   );
 }
+function CreatorAnalytics({ data }: { data: DashboardData }) {
+  const visits = data.creatorLinkEvents.filter((event) => string(event.event_type) === "visit").length;
+  const copies = data.creatorLinkEvents.filter((event) => string(event.event_type) === "copy").length;
+  const courses = data.courses.map((course) => {
+    const events = data.creatorLinkEvents.filter((event) => string(event.course_id) === string(course.id));
+    return { course, visits: events.filter((event) => string(event.event_type) === "visit").length, copies: events.filter((event) => string(event.event_type) === "copy").length };
+  }).sort((a, b) => b.visits - a.visits || b.copies - a.copies);
+  return <div className="dashboard-page creator-link-analytics"><PageHead title="Course analytics" subtitle="See how often your course pages are visited and affiliate links are copied." /><div className="metric-grid"><div className="metric-card"><span>Course visits</span><strong>{visits}</strong><small>All tracked course-page visits</small></div><div className="metric-card"><span>Affiliate link copies</span><strong>{copies}</strong><small>Copies across all affiliates</small></div><div className="metric-card"><span>Published courses</span><strong>{data.courses.filter((course)=>string(course.status)==="published").length}</strong><small>Courses currently available</small></div></div><section className="panel creator-analytics-list"><div className="panel-head"><div><h3>Performance by course</h3><p>Ranked by visits, then link copies.</p></div></div>{courses.length===0?<Empty text="Create a course to begin collecting analytics." />:courses.map(({course,visits:courseVisits,copies:courseCopies})=><div className="creator-analytics-row" key={string(course.id)}><div><b>{string(course.title)}</b><small>{string(course.status)}</small></div><span><b>{courseVisits}</b><small>Visits</small></span><span><b>{courseCopies}</b><small>Copies</small></span><Link href={`/courses/${string(course.slug)}`}>View course</Link></div>)}</section></div>;
+}
+
 function CreatorTransactions({ data }: { data: DashboardData }) {
   return (
     <div className="dashboard-page">

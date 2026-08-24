@@ -29,6 +29,8 @@ export type DashboardData = {
   referrals: Row[];
   audit: Row[];
   settings: Row[];
+  creatorLinkEvents: Row[];
+  affiliateLinkEvents: Row[];
 };
 const rows = (value: unknown) => (Array.isArray(value) ? (value as Row[]) : []);
 
@@ -68,6 +70,8 @@ export async function loadDashboard(role: string) {
     referrals: [],
     audit: [],
     settings: [],
+    creatorLinkEvents: [],
+    affiliateLinkEvents: [],
   };
   const [
     { data: profile },
@@ -251,6 +255,14 @@ export async function loadDashboard(role: string) {
       base.audit,
       base.settings,
     ] = results.map((x) => rows(x.data));
+  }
+  if (role === "creator" && base.courses.length > 0) {
+    const { data: events } = await catalogueClient.from("course_link_events").select("course_id,event_type,affiliate_id,created_at").in("course_id", base.courses.map((course) => String(course.id)));
+    base.creatorLinkEvents = rows(events);
+  }
+  if (base.affiliates.length > 0) {
+    const { data: events } = await catalogueClient.from("course_link_events").select("course_id,event_type,created_at").eq("affiliate_id", user.id);
+    base.affiliateLinkEvents = rows(events);
   }
   return base;
 }
