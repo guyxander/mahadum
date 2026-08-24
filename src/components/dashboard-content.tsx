@@ -39,6 +39,15 @@ const object = (value: unknown) =>
     ? (value as Row)
     : {};
 const list = (value: unknown) => (Array.isArray(value) ? (value as Row[]) : []);
+const courseThumbnail = (value: unknown) => {
+  const path = string(value);
+  const base = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  if (!base || !path.startsWith("public/")) return "";
+  return `${base}/storage/v1/object/public/course-thumbnails/${path
+    .split("/")
+    .map(encodeURIComponent)
+    .join("/")}`;
+};
 const money = (minor: number, currency = "NGN") =>
   new Intl.NumberFormat("en-NG", {
     style: "currency",
@@ -595,26 +604,30 @@ function Explore({ data }: { data: DashboardData }) {
         {data.courses.length === 0 ? (
           <Empty text="No courses have been published yet." />
         ) : (
-          data.courses.map((course) => (
-            <article className="learning-card" key={string(course.id)}>
-              <div className="learning-cover">
-                <span>
-                  {string(object(course.categories).name) || "Course"}
-                </span>
-              </div>
+          data.courses.map((course) => {
+            const href = `/courses/${encodeURIComponent(string(course.slug))}`;
+            const thumbnail = courseThumbnail(course.thumbnail_path);
+            return <article className="learning-card explore-course-card" key={string(course.id)}>
+              <Link
+                className={`learning-cover explore-course-cover${thumbnail ? " has-thumbnail" : ""}`}
+                href={href}
+                aria-label={`View ${string(course.title)} course details`}
+                style={thumbnail ? { backgroundImage: `linear-gradient(180deg,transparent 42%,rgba(26,9,45,.66)),url("${thumbnail}")` } : undefined}
+              >
+                <span>{string(object(course.categories).name) || "Course"}</span>
+                <b>View course <span aria-hidden="true">→</span></b>
+              </Link>
               <div>
-                <small>
-                  {money(
-                    number(course.price_minor),
-                    string(course.currency) || "NGN",
-                  )}
-                </small>
-                <h3>{string(course.title)}</h3>
-                <p>{string(course.short_description)}</p>
+                <Link className="explore-course-details" href={href}>
+                  <small>{money(number(course.price_minor),string(course.currency) || "NGN")}</small>
+                  <h3>{string(course.title)}</h3>
+                  <p>{string(course.short_description)}</p>
+                  <span className="explore-view-link">Course details <b aria-hidden="true">→</b></span>
+                </Link>
                 <CheckoutButton courseId={string(course.id)} variant="explore" />
               </div>
-            </article>
-          ))
+            </article>;
+          })
         )}
       </div>
     </div>
