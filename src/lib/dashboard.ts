@@ -39,6 +39,7 @@ export async function loadDashboard(role: string) {
     data: { user },
   } = await client.auth.getUser();
   if (!user) return null;
+  const catalogueClient = createAdminClient();
   const base: DashboardData = {
     generatedAt: Date.now(),
     userId: user.id,
@@ -89,12 +90,13 @@ export async function loadDashboard(role: string) {
       .select("*")
       .eq("affiliate_id", user.id)
       .order("attributed_at", { ascending: false }),
-    client
+    catalogueClient
       .from("courses")
       .select(
-        "id,title,slug,short_description,thumbnail_path,price_minor,currency,affiliate_bonus_bps",
+        "id,title,slug,short_description,thumbnail_path,price_minor,currency,affiliate_bonus_bps,published_at,payments(count)",
       )
       .eq("status", "published")
+      .eq("payments.status", "successful")
       .order("published_at", { ascending: false }),
   ]);
   base.profile = profile as Row | null;
@@ -103,7 +105,12 @@ export async function loadDashboard(role: string) {
   base.name = String(profile?.full_name || base.name);
   base.affiliates = rows(affiliateRows);
   base.referrals = rows(referralRows);
-  base.marketplaceCourses = rows(publishedCourses);
+  base.marketplaceCourses = rows(publishedCourses).sort((a, b) => {
+    const sales = (row: Row) => Number(rows(row.payments)[0]?.count || 0);
+    const salesDifference = sales(b) - sales(a);
+    if (salesDifference !== 0) return salesDifference;
+    return String(b.published_at || "").localeCompare(String(a.published_at || ""));
+  });
   if (role === "creator") {
     const results = await Promise.all([
       client

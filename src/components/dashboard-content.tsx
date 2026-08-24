@@ -797,6 +797,7 @@ function AffiliatePanel({ data }: { data: DashboardData }) {
                 priceMinor: number(course.price_minor),
                 currency: string(course.currency) || "NGN",
                 affiliateBonusPercent: number(course.affiliate_bonus_bps) / 100,
+                salesCount: number(list(course.payments)[0]?.count),
               }))}
             />
           ) : (
